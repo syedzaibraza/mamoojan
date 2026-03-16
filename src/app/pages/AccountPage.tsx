@@ -1,6 +1,6 @@
-import { useState } from "react";
-"use client";
+ "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Package, CreditCard, Gift, MapPin, Star, Settings, User } from "lucide-react";
 

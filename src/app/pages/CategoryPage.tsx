@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
-"use client";
+ "use client";
 
+import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { SlidersHorizontal, X, ChevronDown, Grid3X3, List } from "lucide-react";

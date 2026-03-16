@@ -1,6 +1,6 @@
-import { useState } from "react";
-"use client";
+ "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { CreditCard, Lock, Check, ChevronRight } from "lucide-react";
 import { useCart } from "../context/CartContext";
