@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Facebook, Twitter, Instagram, Youtube, Mail, Phone, MapPin } from "lucide-react";
 
@@ -9,10 +10,13 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-4 lg:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                <span className="text-[#1A1A1A] text-sm" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700 }}>M</span>
-              </div>
-              <span className="text-xl" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700 }}>MamooJan</span>
+              <Image
+                src="/Mamoojan-Logo-W.png"
+                alt="MamooJan"
+                width={120}
+                height={32}
+                className="h-8 w-auto"
+              />
             </div>
             <p className="text-sm text-gray-400 mb-2">Connecting Families Around The World</p>
             <p className="text-sm text-gray-400 mb-4">Traditional products, wellness supplements, snacks, and everyday essentials.</p>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, ShoppingCart, User, Menu, X, ChevronDown, Tag } from "lucide-react";
@@ -108,12 +109,13 @@ export function Header() {
         <div className="flex items-center justify-between gap-4">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+            {/* <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
               <span className="text-white text-sm" style={{ fontFamily: "Poppins, sans-serif" }}>M</span>
             </div>
             <span className="text-xl hidden sm:block" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, color: "var(--foreground)" }}>
               MamooJan
-            </span>
+            </span> */}
+            <Image src="/Mamoojan-Logo.png" alt="MamooJan" width={100} height={100} />
           </Link>
 
           {/* Search Bar */}
@@ -193,9 +195,8 @@ export function Header() {
               >
                 <Link
                   href={cat.slug === "brands" ? "/brands" : cat.slug.startsWith("category") ? `/${cat.slug}` : `/category/${cat.slug}`}
-                  className={`flex items-center gap-1 px-3 py-3 text-sm transition-colors ${
-                    cat.name === "Deals" ? "text-accent" : "text-foreground"
-                  } hover:text-muted-foreground`}
+                  className={`flex items-center gap-1 px-3 py-3 text-sm transition-colors ${cat.name === "Deals" ? "text-accent" : "text-foreground"
+                    } hover:text-muted-foreground`}
                 >
                   {cat.name}
                   {cat.subcategories.length > 0 && <ChevronDown className="w-3 h-3" />}
