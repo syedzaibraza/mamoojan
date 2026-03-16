@@ -1,4 +1,4 @@
-import { ProductPage } from "../../pages/ProductPage";
+import { ProductPage } from "../pages/ProductPage";
 
 export default function Page() {
   return <ProductPage />;

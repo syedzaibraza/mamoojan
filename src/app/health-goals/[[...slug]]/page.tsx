@@ -1,4 +1,4 @@
-import { HealthGoalPage } from "../../../pages/HealthGoalPage";
+import { HealthGoalPage } from "../../pages/HealthGoalPage";
 
 export default function Page() {
   return <HealthGoalPage />;
