@@ -3,8 +3,9 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight, Leaf, Heart, Zap, Home, Globe, BookOpen, Lightbulb } from "lucide-react";
-import { products, healthGoals } from "../data/products";
+import { healthGoals } from "../data/products";
 import { ProductCard } from "../components/ProductCard";
+import type { Product } from "../data/products";
 
 const goalContent: Record<string, { title: string; description: string; tips: string[]; icon: React.ReactNode }> = {
   "traditional-wellness": {
@@ -39,7 +40,7 @@ const goalContent: Record<string, { title: string; description: string; tips: st
   },
 };
 
-export function HealthGoalPage() {
+export function HealthGoalPage({ products }: { products: Product[] }) {
   const params = useParams();
   const slugParam = params?.slug;
   const slug = Array.isArray(slugParam) ? slugParam[0] : slugParam;

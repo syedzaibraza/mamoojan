@@ -3,12 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { CreditCard, Lock, Check, ChevronRight } from "lucide-react";
-import { useCart } from "../context/CartContext";
+import { useCartStore } from "../store/cartStore";
 
 type Step = "shipping" | "payment" | "review";
 
 export function CheckoutPage() {
-  const { items, totalPrice, discount, clearCart } = useCart();
+  const items = useCartStore((s) => s.items);
+  const totalPrice = useCartStore((s) => s.items.reduce((sum, i) => sum + i.product.price * i.quantity, 0));
+  const discount = useCartStore((s) => s.discount);
+  const clearCart = useCartStore((s) => s.clearCart);
   const [step, setStep] = useState<Step>("shipping");
   const [orderPlaced, setOrderPlaced] = useState(false);
 

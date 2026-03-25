@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronRight, Star, Award } from "lucide-react";
-import { brands, products } from "../data/products";
+import { brands } from "../data/products";
+import type { Product } from "../data/products";
 
 const brandDescriptions: Record<string, string> = {
   "MamooJan": "MamooJan brings traditional products, authentic snacks, and everyday essentials to families around the world. Founded in 2017, we connect cultures through familiar flavors and quality products.",
@@ -12,20 +13,28 @@ const brandCertifications: Record<string, string[]> = {
   "Focus N Rulz": ["Natural Ingredients", "Traditional Formulas", "Quality Tested", "USA Distribution"],
 };
 
-const brandDetails = brands.map((brand) => {
-  const brandProducts = products.filter((p) => p.brand === brand);
-  const avgRating = brandProducts.length > 0 ? brandProducts.reduce((a, p) => a + p.rating, 0) / brandProducts.length : 0;
-  return {
-    name: brand,
-    products: brandProducts,
-    avgRating: Math.round(avgRating * 10) / 10,
-    totalReviews: brandProducts.reduce((a, p) => a + p.reviewCount, 0),
-    description: brandDescriptions[brand] || `Quality products from ${brand}.`,
-    certifications: brandCertifications[brand] || ["Quality Assured"],
-  };
-});
+function getBrandDetails(allProducts: Product[]) {
+  return brands.map((brand) => {
+    const brandProducts = allProducts.filter((p) => p.brand === brand);
+    const avgRating =
+      brandProducts.length > 0
+        ? brandProducts.reduce((a, p) => a + p.rating, 0) / brandProducts.length
+        : 0;
 
-export function BrandPage() {
+    return {
+      name: brand,
+      products: brandProducts,
+      avgRating: Math.round(avgRating * 10) / 10,
+      totalReviews: brandProducts.reduce((a, p) => a + p.reviewCount, 0),
+      description: brandDescriptions[brand] || `Quality products from ${brand}.`,
+      certifications: brandCertifications[brand] || ["Quality Assured"],
+    };
+  });
+}
+
+export function BrandPage({ products }: { products: Product[] }) {
+  const brandDetails = getBrandDetails(products);
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">

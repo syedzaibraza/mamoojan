@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Star, ShoppingCart, Eye } from "lucide-react";
 import type { Product } from "../data/products";
-import { useCart } from "../context/CartContext";
+import { useCartStore } from "../store/cartStore";
 import { toast } from "sonner";
 
 interface ProductCardProps {
@@ -11,7 +11,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const { addToCart } = useCart();
+  const addToCart = useCartStore((s) => s.addToCart);
   const discount = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;

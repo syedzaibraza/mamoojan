@@ -1,11 +1,10 @@
  "use client";
 
 import { useState, useMemo } from "react";
-import { useParams } from "next/navigation";
 import Link from "next/link";
 import { SlidersHorizontal, X, ChevronDown, Grid3X3, List } from "lucide-react";
 import { ProductCard } from "../components/ProductCard";
-import { products, brands, categories } from "../data/products";
+import type { Product } from "../data/products";
 
 const dietOptions = ["Natural", "Vegetarian", "Eco-Friendly", "Reusable", "Herbal"];
 const priceRanges = [
@@ -22,9 +21,13 @@ const sortOptions = [
   { label: "Newest", value: "newest" },
 ];
 
-export function CategoryPage() {
-  const params = useParams();
-  const slug = params?.slug as string | undefined;
+export function CategoryPage({
+  categoryName,
+  products,
+}: {
+  categoryName: string;
+  products: Product[];
+}) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedDiets, setSelectedDiets] = useState<string[]>([]);
@@ -32,15 +35,8 @@ export function CategoryPage() {
   const [minRating, setMinRating] = useState(0);
   const [sortBy, setSortBy] = useState("popularity");
 
-  const category = categories.find((c) => c.slug === slug);
-  const categoryName = category?.name || (slug === "deals" ? "Deals & Promotions" : "All Products");
-
   const filteredProducts = useMemo(() => {
-    let result = slug === "deals"
-      ? products.filter((p) => p.originalPrice)
-      : slug
-      ? products.filter((p) => p.category.toLowerCase().replace(/[& ]/g, (m) => (m === "&" ? "" : "-")).replace("--", "-") === slug || true)
-      : products;
+    let result = [...products];
 
     if (selectedBrands.length > 0) {
       result = result.filter((p) => selectedBrands.includes(p.brand));
@@ -65,7 +61,7 @@ export function CategoryPage() {
     }
 
     return result;
-  }, [slug, selectedBrands, selectedDiets, selectedPriceRange, minRating, sortBy]);
+  }, [products, selectedBrands, selectedDiets, selectedPriceRange, minRating, sortBy]);
 
   const clearFilters = () => {
     setSelectedBrands([]);
@@ -75,6 +71,11 @@ export function CategoryPage() {
   };
 
   const activeFilterCount = selectedBrands.length + selectedDiets.length + (selectedPriceRange !== null ? 1 : 0) + (minRating > 0 ? 1 : 0);
+
+  const brandOptions = useMemo(
+    () => Array.from(new Set(products.map((p) => p.brand))).sort((a, b) => a.localeCompare(b)),
+    [products]
+  );
 
   const toggleBrand = (brand: string) => {
     setSelectedBrands((prev) => prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]);
@@ -167,7 +168,7 @@ export function CategoryPage() {
           <div className="mb-6">
             <h4 className="text-sm mb-3" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}>Brand</h4>
             <div className="space-y-2 max-h-48 overflow-y-auto">
-              {brands.map((brand) => (
+              {brandOptions.map((brand) => (
                 <label key={brand} className="flex items-center gap-2 text-sm cursor-pointer hover:text-primary">
                   <input
                     type="checkbox"

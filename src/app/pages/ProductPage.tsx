@@ -1,19 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Star, ShoppingCart, Heart, Share2, Shield, Truck, RotateCcw, ChevronRight, ThumbsUp, Minus, Plus } from "lucide-react";
-import { products, reviews } from "../data/products";
+import { reviews } from "../data/products";
 import { ProductCard } from "../components/ProductCard";
-import { useCart } from "../context/CartContext";
+import { useCartStore } from "../store/cartStore";
 import { toast } from "sonner";
+import type { Product } from "../data/products";
 
-export function ProductPage() {
-  const params = useParams();
-  const id = params?.id as string | undefined;
-  const product = products.find((p) => p.id === id) || products[0];
-  const { addToCart } = useCart();
+export function ProductPage({ product, relatedProducts }: { product: Product; relatedProducts: Product[] }) {
+  const addToCart = useCartStore((s) => s.addToCart);
   const [quantity, setQuantity] = useState(1);
   const [subscription, setSubscription] = useState(false);
   const [activeTab, setActiveTab] = useState<"benefits" | "ingredients" | "reviews" | "faq">("benefits");
@@ -22,7 +19,7 @@ export function ProductPage() {
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
-  const relatedProducts = products.filter((p) => p.id !== product.id && (p.category === product.category || p.healthGoals.some((g) => product.healthGoals.includes(g)))).slice(0, 4);
+  const safeRelatedProducts = relatedProducts.filter((p) => p.id !== product.id).slice(0, 4);
 
   const ratingBreakdown = [
     { stars: 5, percent: 68 },
@@ -296,11 +293,11 @@ export function ProductPage() {
       </div>
 
       {/* Related Products */}
-      {relatedProducts.length > 0 && (
+      {safeRelatedProducts.length > 0 && (
         <section className="border-t border-border pt-8 mb-12">
           <h2 className="mb-6" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: "24px" }}>You May Also Like</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {relatedProducts.map((p) => (
+            {safeRelatedProducts.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
           </div>

@@ -4,55 +4,31 @@ import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, ShoppingCart, User, Menu, X, ChevronDown, Tag } from "lucide-react";
-import { useCart } from "../context/CartContext";
-import { products } from "../data/products";
+import { Search, ShoppingCart, User, Menu, X, ChevronDown, Tag, Store } from "lucide-react";
+import { useCartStore } from "../store/cartStore";
+type WooCategory = { id: number; name: string; slug: string; parent: number };
 
-const navCategories = [
-  {
-    name: "Herbal Supplements",
-    slug: "herbal-supplements",
-    subcategories: ["Shilajit Resin", "Shilajit Gummies", "Shilajit Shot", "Joshanda", "Energy Supplements", "Traditional Remedies"],
-    featured: ["Shilajit Resin - Pure Himalayan", "Shilajit Gummies - Daily Wellness"],
-  },
-  {
-    name: "Snacks & Food",
-    slug: "snacks-food",
-    subcategories: ["Mango Snacks", "Dried Fruits", "Traditional Candy", "Digestive Treats", "Spiced Snacks"],
-    featured: ["Mango Bites - Sweet Dried Mango", "Hazmina Digestive Candy"],
-  },
-  {
-    name: "Personal Care",
-    slug: "personal-care-wellness",
-    subcategories: ["Tongue Scrapers", "Alum Blocks", "Grooming Essentials", "Oral Care", "Natural Skincare"],
-    featured: ["Tongue Scraper - Stainless Steel"],
-  },
-  {
-    name: "Lifestyle",
-    slug: "lifestyle-products",
-    subcategories: ["Caps & Hats", "Water Bottles", "Accessories", "Daily Essentials"],
-    featured: ["MamooJan Classic Cap", "MamooJan Water Bottle"],
-  },
-  {
-    name: "Celebrations",
-    slug: "celebration-items",
-    subcategories: ["Greeting Cards", "Event Flags", "Decorations", "Party Supplies"],
-    featured: ["Celebration Greeting Cards Set"],
-  },
-  { name: "Brands", slug: "brands", subcategories: ["MamooJan", "Focus N Rulz"] },
-  { name: "Deals", slug: "category/deals", subcategories: [] },
-];
+type NavSubcategory = { name: string; slug: string };
+
+type NavItem =
+  | { key: string; name: string; type: "deals"; subcategories: NavSubcategory[] }
+  | { key: string; name: string; type: "brands"; subcategories: NavSubcategory[] }
+  | { key: string; name: string; type: "woo"; slug: string; subcategories: NavSubcategory[] };
+
+type SearchProduct = { id: string; name: string; brand: string; price: number; image: string };
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [navItems, setNavItems] = useState<NavItem[]>([]);
+  const [activeMenuKey, setActiveMenuKey] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchResults, setSearchResults] = useState<typeof products>([]);
-  const { totalItems } = useCart();
+  const [searchResults, setSearchResults] = useState<SearchProduct[]>([]);
+  const totalItems = useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0));
   const router = useRouter();
   const menuTimeout = useRef<ReturnType<typeof setTimeout>>();
   const searchRef = useRef<HTMLDivElement>(null);
+  const searchRequestId = useRef(0);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -64,30 +40,108 @@ export function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSearch = (query: string) => {
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadWooCategories() {
+      try {
+        const firstRes = await fetch("/api/woocommerce/categories?per_page=100&page=1");
+        const firstData = (await firstRes.json()) as {
+          categories?: WooCategory[];
+          total_pages?: number;
+        };
+
+        const categories = firstData.categories ?? [];
+        const totalPages = firstData.total_pages ?? 1;
+        let allCategories = categories;
+
+        for (let p = 2; p <= totalPages; p += 1) {
+          const res = await fetch(`/api/woocommerce/categories?per_page=100&page=${p}`);
+          const data = (await res.json()) as { categories?: WooCategory[] };
+          allCategories = [...allCategories, ...(data.categories ?? [])];
+        }
+
+        if (cancelled) return;
+
+        const topLevel = allCategories.filter((c) => !c.parent);
+        const childrenByParent = new Map<number, WooCategory[]>();
+        for (const c of allCategories) {
+          if (!c.parent) continue;
+          const list = childrenByParent.get(c.parent) ?? [];
+          list.push(c);
+          childrenByParent.set(c.parent, list);
+        }
+
+        const wooItems: NavItem[] = topLevel.map((cat) => {
+          const children = childrenByParent.get(cat.id) ?? [];
+          return {
+            key: `woo-${cat.id}`,
+            name: cat.name,
+            type: "woo",
+            slug: cat.slug,
+            subcategories: children.map((sub) => ({ name: sub.name, slug: sub.slug })),
+          };
+        });
+
+        setNavItems([
+          ...wooItems,
+          { key: "brands", name: "Brands", type: "brands", subcategories: [] },
+          { key: "deals", name: "Deals", type: "deals", subcategories: [] },
+        ]);
+      } catch {
+        if (cancelled) return;
+        setNavItems([
+          { key: "brands", name: "Brands", type: "brands", subcategories: [] },
+          { key: "deals", name: "Deals", type: "deals", subcategories: [] },
+        ]);
+      }
+    }
+
+    loadWooCategories();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleSearch = async (query: string) => {
     setSearchQuery(query);
-    if (query.length > 1) {
-      const results = products.filter(
-        (p) =>
-          p.name.toLowerCase().includes(query.toLowerCase()) ||
-          p.brand.toLowerCase().includes(query.toLowerCase()) ||
-          p.category.toLowerCase().includes(query.toLowerCase())
+    if (query.length <= 1) {
+      setSearchResults([]);
+      setSearchOpen(false);
+      return;
+    }
+
+    const requestId = ++searchRequestId.current;
+    setSearchOpen(true);
+
+    try {
+      const res = await fetch(
+        `/api/woocommerce/products?per_page=5&page=1&search=${encodeURIComponent(query)}`
       );
-      setSearchResults(results.slice(0, 5));
-      setSearchOpen(true);
-    } else {
+      const data = (await res.json()) as { products?: SearchProduct[] };
+      if (requestId !== searchRequestId.current) return;
+      setSearchResults((data.products ?? []).slice(0, 5));
+      setSearchOpen((data.products ?? []).length > 0);
+    } catch {
+      if (requestId !== searchRequestId.current) return;
       setSearchResults([]);
       setSearchOpen(false);
     }
   };
 
-  const handleMenuEnter = (name: string) => {
+  const handleMenuEnter = (key: string) => {
     if (menuTimeout.current) clearTimeout(menuTimeout.current);
-    setActiveMenu(name);
+    setActiveMenuKey(key);
   };
 
   const handleMenuLeave = () => {
-    menuTimeout.current = setTimeout(() => setActiveMenu(null), 200);
+    menuTimeout.current = setTimeout(() => setActiveMenuKey(null), 200);
+  };
+
+  const getNavHref = (cat: NavItem) => {
+    if (cat.type === "deals") return "/category/deals";
+    if (cat.type === "brands") return "/brands";
+    return `/category/${cat.slug}`;
   };
 
   return (
@@ -158,6 +212,10 @@ export function Header() {
 
           {/* Account & Cart */}
           <div className="flex items-center gap-2 sm:gap-4">
+            <Link href="/shop" className="hidden sm:flex items-center gap-1.5 text-sm text-foreground hover:text-muted-foreground transition-colors">
+              <Store className="w-5 h-5" />
+              <span className="hidden md:inline">Shop</span>
+            </Link>
             <Link href="/account" className="hidden sm:flex items-center gap-1.5 text-sm text-foreground hover:text-muted-foreground transition-colors">
               <User className="w-5 h-5" />
               <span className="hidden md:inline">Account</span>
@@ -186,26 +244,27 @@ export function Header() {
       <nav className="hidden lg:block border-t border-border bg-white">
         <div className="max-w-7xl mx-auto px-4">
           <ul className="flex items-center gap-0">
-            {navCategories.map((cat) => (
+            {navItems.map((cat) => (
               <li
-                key={cat.name}
+                key={cat.key}
                 className="relative"
-                onMouseEnter={() => handleMenuEnter(cat.name)}
+                onMouseEnter={() => handleMenuEnter(cat.key)}
                 onMouseLeave={handleMenuLeave}
               >
                 <Link
-                  href={cat.slug === "brands" ? "/brands" : cat.slug.startsWith("category") ? `/${cat.slug}` : `/category/${cat.slug}`}
-                  className={`flex items-center gap-1 px-3 py-3 text-sm transition-colors ${cat.name === "Deals" ? "text-accent" : "text-foreground"
-                    } hover:text-muted-foreground`}
+                  href={getNavHref(cat)}
+                  className={`flex items-center gap-1 px-3 py-3 text-sm transition-colors ${
+                    cat.type === "deals" ? "text-accent" : "text-foreground"
+                  } hover:text-muted-foreground`}
                 >
                   {cat.name}
                   {cat.subcategories.length > 0 && <ChevronDown className="w-3 h-3" />}
                 </Link>
                 {/* Mega Menu */}
-                {activeMenu === cat.name && cat.subcategories.length > 0 && (
+                {activeMenuKey === cat.key && cat.subcategories.length > 0 && (
                   <div
                     className="absolute top-full left-0 bg-white shadow-xl border border-border rounded-b-lg p-6 min-w-[400px] z-50"
-                    onMouseEnter={() => handleMenuEnter(cat.name)}
+                    onMouseEnter={() => handleMenuEnter(cat.key)}
                     onMouseLeave={handleMenuLeave}
                   >
                     <div className="grid grid-cols-2 gap-6">
@@ -213,33 +272,18 @@ export function Header() {
                         <h4 className="text-xs text-muted-foreground mb-3 uppercase tracking-wider">Subcategories</h4>
                         <ul className="space-y-2">
                           {cat.subcategories.map((sub) => (
-                            <li key={sub}>
+                            <li key={sub.slug}>
                               <Link
-                                href={`/category/${cat.slug}`}
+                                href={`/category/${sub.slug}`}
                                 className="text-sm text-foreground hover:text-muted-foreground transition-colors"
-                                onClick={() => setActiveMenu(null)}
+                                onClick={() => setActiveMenuKey(null)}
                               >
-                                {sub}
+                                {sub.name}
                               </Link>
                             </li>
                           ))}
                         </ul>
                       </div>
-                      {cat.featured && cat.featured.length > 0 && (
-                        <div>
-                          <h4 className="text-xs text-muted-foreground mb-3 uppercase tracking-wider">Featured</h4>
-                          <div className="space-y-3">
-                            {cat.featured.map((f) => (
-                              <div key={f} className="p-3 bg-secondary rounded-lg">
-                                <span className="text-sm">{f}</span>
-                              </div>
-                            ))}
-                            <div className="p-3 bg-accent/10 rounded-lg border border-accent/20">
-                              <span className="text-sm text-accent">New Arrivals This Week!</span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
                 )}
@@ -253,11 +297,13 @@ export function Header() {
       {mobileMenuOpen && (
         <div className="lg:hidden border-t border-border bg-white max-h-[70vh] overflow-y-auto">
           <nav className="p-4 space-y-1">
-            {navCategories.map((cat) => (
+            {navItems.map((cat) => (
               <Link
-                key={cat.name}
-                href={cat.slug === "brands" ? "/brands" : `/category/${cat.slug}`}
-                className={`block py-3 px-3 rounded-lg text-sm ${cat.name === "Deals" ? "text-accent bg-accent/5" : "text-foreground"} hover:bg-secondary transition-colors`}
+                key={cat.key}
+                href={getNavHref(cat)}
+                className={`block py-3 px-3 rounded-lg text-sm ${
+                  cat.type === "deals" ? "text-accent bg-accent/5" : "text-foreground"
+                } hover:bg-secondary transition-colors`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {cat.name}

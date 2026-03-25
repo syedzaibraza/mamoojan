@@ -1,19 +1,54 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { Minus, Plus, X, ShoppingBag, ArrowRight, Tag, Truck, Shield } from "lucide-react";
-import { useCart } from "../context/CartContext";
+import { useCartStore } from "../store/cartStore";
 import { ProductCard } from "../components/ProductCard";
-import { products } from "../data/products";
+import type { Product } from "../data/products";
 
 export function CartPage() {
-  const { items, removeFromCart, updateQuantity, totalPrice, couponCode, setCouponCode, discount, applyCoupon } = useCart();
+  const items = useCartStore((s) => s.items);
+  const removeFromCart = useCartStore((s) => s.removeFromCart);
+  const updateQuantity = useCartStore((s) => s.updateQuantity);
+  const totalPrice = useCartStore((s) => s.items.reduce((sum, i) => sum + i.product.price * i.quantity, 0));
+  const couponCode = useCartStore((s) => s.couponCode);
+  const setCouponCode = useCartStore((s) => s.setCouponCode);
+  const discount = useCartStore((s) => s.discount);
+  const applyCoupon = useCartStore((s) => s.applyCoupon);
 
   const shipping = totalPrice >= 49 ? 0 : 5.99;
   const discountAmount = (totalPrice * discount) / 100;
   const finalTotal = totalPrice - discountAmount + shipping;
 
-  const suggestedProducts = products.filter((p) => !items.some((i) => i.product.id === p.id)).slice(0, 4);
+  const [suggestedProducts, setSuggestedProducts] = useState<Product[]>([]);
+  const suggestedProductsFiltered = useMemo(
+    () => suggestedProducts.filter((p) => !items.some((i) => i.product.id === p.id)).slice(0, 4),
+    [suggestedProducts, items]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadSuggestions() {
+      // Only show suggestions when cart is empty.
+      if (items.length !== 0) return;
+
+      try {
+        const res = await fetch("/api/woocommerce/products?per_page=8&page=1");
+        const data = (await res.json()) as { products?: Product[] };
+        if (cancelled) return;
+        setSuggestedProducts(data.products ?? []);
+      } catch {
+        if (cancelled) return;
+        setSuggestedProducts([]);
+      }
+    }
+
+    loadSuggestions();
+    return () => {
+      cancelled = true;
+    };
+  }, [items.length]);
 
   if (items.length === 0) {
     return (
@@ -28,7 +63,7 @@ export function CartPage() {
         <div className="mt-16">
           <h2 className="mb-6" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600, fontSize: "20px" }}>Popular Products</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {suggestedProducts.map((p) => (
+            {suggestedProductsFiltered.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
           </div>
