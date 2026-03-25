@@ -146,6 +146,7 @@ export default async function ShopPage() {
 
   const wcUrl = wcUrlRaw.replace(/\/$/, "");
   const perPage = 100;
+  const requestTimeoutMs = 15_000;
 
   let page = 1;
   let mappedProducts: Product[] = [];
@@ -164,11 +165,18 @@ export default async function ShopPage() {
       endpoint.searchParams.set("per_page", String(perPage));
       endpoint.searchParams.set("page", String(catPage));
 
-      const res = await fetch(endpoint.toString(), {
-        method: "GET",
-        headers: { Accept: "application/json" },
-        cache: "no-store",
-      });
+      let res: Response;
+      try {
+        res = await fetch(endpoint.toString(), {
+          method: "GET",
+          headers: { Accept: "application/json" },
+          cache: "no-store",
+          signal: AbortSignal.timeout(requestTimeoutMs),
+        });
+      } catch {
+        // Network/SSL/DNS issues should not take the whole Shop page down.
+        break;
+      }
 
       if (!res.ok) break;
 
@@ -194,11 +202,22 @@ export default async function ShopPage() {
     endpoint.searchParams.set("page", String(page));
     endpoint.searchParams.set("status", "publish");
 
-    const res = await fetch(endpoint.toString(), {
-      method: "GET",
-      headers: { Accept: "application/json" },
-      cache: "no-store",
-    });
+    let res: Response;
+    try {
+      res = await fetch(endpoint.toString(), {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+        signal: AbortSignal.timeout(requestTimeoutMs),
+      });
+    } catch {
+      return (
+        <div className="max-w-7xl mx-auto px-4 py-10">
+          <h1 style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: "28px" }}>Shop</h1>
+          <p className="text-destructive mt-3">Failed to fetch products from WooCommerce (network error).</p>
+        </div>
+      );
+    }
 
     if (!res.ok) {
       return (

@@ -139,9 +139,9 @@ export function Header() {
   };
 
   const getNavHref = (cat: NavItem) => {
-    if (cat.type === "deals") return "/category/deals";
+    if (cat.type === "deals") return "/shop?category=deals";
     if (cat.type === "brands") return "/brands";
-    return `/category/${cat.slug}`;
+    return `/shop?category=${cat.slug}`;
   };
 
   return (
@@ -193,7 +193,7 @@ export function Header() {
                     key={product.id}
                     className="flex items-center gap-3 p-3 w-full text-left hover:bg-secondary transition-colors"
                     onClick={() => {
-                      router.push(`/product/${product.id}`);
+                      router.push(`/shop/${product.id}`);
                       setSearchOpen(false);
                       setSearchQuery("");
                     }}
@@ -253,9 +253,8 @@ export function Header() {
               >
                 <Link
                   href={getNavHref(cat)}
-                  className={`flex items-center gap-1 px-3 py-3 text-sm transition-colors ${
-                    cat.type === "deals" ? "text-accent" : "text-foreground"
-                  } hover:text-muted-foreground`}
+                  className={`flex items-center gap-1 px-3 py-3 text-sm transition-colors ${cat.type === "deals" ? "text-accent" : "text-foreground"
+                    } hover:text-muted-foreground`}
                 >
                   {cat.name}
                   {cat.subcategories.length > 0 && <ChevronDown className="w-3 h-3" />}
@@ -274,7 +273,7 @@ export function Header() {
                           {cat.subcategories.map((sub) => (
                             <li key={sub.slug}>
                               <Link
-                                href={`/category/${sub.slug}`}
+                                href={`/shop?category=${sub.slug}`}
                                 className="text-sm text-foreground hover:text-muted-foreground transition-colors"
                                 onClick={() => setActiveMenuKey(null)}
                               >
@@ -301,9 +300,8 @@ export function Header() {
               <Link
                 key={cat.key}
                 href={getNavHref(cat)}
-                className={`block py-3 px-3 rounded-lg text-sm ${
-                  cat.type === "deals" ? "text-accent bg-accent/5" : "text-foreground"
-                } hover:bg-secondary transition-colors`}
+                className={`block py-3 px-3 rounded-lg text-sm ${cat.type === "deals" ? "text-accent bg-accent/5" : "text-foreground"
+                  } hover:bg-secondary transition-colors`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {cat.name}

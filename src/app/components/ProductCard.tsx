@@ -33,17 +33,16 @@ export function ProductCard({ product }: ProductCardProps) {
           {product.labels.map((label) => (
             <span
               key={label}
-              className={`text-xs px-2 py-0.5 rounded-full ${
-                label === "Best Seller"
-                  ? "bg-primary text-white"
-                  : label === "Sale"
+              className={`text-xs px-2 py-0.5 rounded-full ${label === "Best Seller"
+                ? "bg-primary text-white"
+                : label === "Sale"
                   ? "bg-accent text-white"
                   : label === "New"
-                  ? "bg-blue-500 text-white"
-                  : label === "Organic"
-                  ? "bg-green-100 text-green-700"
-                  : "bg-gray-100 text-gray-700"
-              }`}
+                    ? "bg-blue-500 text-white"
+                    : label === "Organic"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-gray-100 text-gray-700"
+                }`}
             >
               {label}
             </span>

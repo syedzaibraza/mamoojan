@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
 import { ProductCard } from "../components/ProductCard";
 import type { Product } from "../data/products";
@@ -35,6 +36,41 @@ function categoryNameToSlug(categoryName: string) {
 
 type ShopCategory = { name: string; slug: string };
 
+function parseCategoryParam(paramValue: string, availableCategories: ShopCategory[]): string[] {
+  const pieces = paramValue
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (pieces.length === 0) return [];
+
+  const picked: string[] = [];
+
+  for (const piece of pieces) {
+    const normalized = categoryNameToSlug(piece);
+
+    const exact = availableCategories.find((c) => c.slug === normalized);
+    if (exact) {
+      picked.push(exact.slug);
+      continue;
+    }
+
+    // Fallback for friendlier URLs like `?category=food` matching `snacks-food`.
+    const partial = availableCategories
+      .filter(
+        (c) =>
+          c.slug === normalized ||
+          c.slug.endsWith(`-${normalized}`) ||
+          c.slug.startsWith(`${normalized}-`) ||
+          c.slug.includes(`-${normalized}`),
+      )
+      .sort((a, b) => a.slug.length - b.slug.length)[0];
+
+    if (partial) picked.push(partial.slug);
+  }
+
+  return Array.from(new Set(picked));
+}
+
 export function ShopClient({
   products,
   categories,
@@ -44,11 +80,18 @@ export function ShopClient({
 }) {
 
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedPriceRange, setSelectedPriceRange] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState("popularity");
   const pageSize = 12;
   const [visibleCount, setVisibleCount] = useState(pageSize);
+
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const categoryParam = searchParams.get("category") ?? "";
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(() =>
+    categoryParam ? parseCategoryParam(categoryParam, categories) : [],
+  );
 
   const filteredProducts = useMemo(() => {
     let result = [...products];
@@ -86,6 +129,35 @@ export function ShopClient({
     return result;
   }, [products, selectedCategories, selectedPriceRange, sortBy]);
 
+  // 1) When someone lands on `/shop?category=...`, auto-select the category and filter products.
+  useEffect(() => {
+    const nextSelected = categoryParam ? parseCategoryParam(categoryParam, categories) : [];
+    const nextKey = nextSelected.slice().sort().join(",");
+    setSelectedCategories((prev) => {
+      const currentKey = prev.slice().sort().join(",");
+      if (currentKey === nextKey) return prev;
+      return nextSelected;
+    });
+  }, [categoryParam, categories]);
+
+  const syncUrlWithSelectedCategories = (nextSelected: string[]) => {
+    const currentKey = categoryParam
+      ? parseCategoryParam(categoryParam, categories).slice().sort().join(",")
+      : "";
+    const nextKey = nextSelected.slice().sort().join(",");
+    if (currentKey === nextKey) return;
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (nextSelected.length === 0) {
+      params.delete("category");
+    } else {
+      params.set("category", nextSelected.join(","));
+    }
+
+    const qs = params.toString();
+    router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
+  };
+
   useEffect(() => {
     setVisibleCount(pageSize);
   }, [products, selectedCategories, selectedPriceRange, sortBy]);
@@ -97,6 +169,7 @@ export function ShopClient({
   const clearFilters = () => {
     setSelectedCategories([]);
     setSelectedPriceRange(null);
+    syncUrlWithSelectedCategories([]);
   };
 
   const activeFilterCount =
@@ -180,11 +253,13 @@ export function ShopClient({
                     <input
                       type="checkbox"
                       checked={checked}
-                      onChange={() =>
-                        setSelectedCategories((prev) =>
-                          prev.includes(cat.slug) ? prev.filter((s) => s !== cat.slug) : [...prev, cat.slug]
-                        )
-                      }
+                      onChange={() => {
+                        const nextSelected = checked
+                          ? selectedCategories.filter((s) => s !== cat.slug)
+                          : [...selectedCategories, cat.slug];
+                        setSelectedCategories(nextSelected);
+                        syncUrlWithSelectedCategories(nextSelected);
+                      }}
                       className="accent-primary rounded"
                     />
                     {cat.name}

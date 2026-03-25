@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Star, ShoppingCart, Heart, Share2, Shield, Truck, RotateCcw, ChevronRight, ThumbsUp, Minus, Plus } from "lucide-react";
 import { reviews } from "../data/products";
@@ -12,8 +12,48 @@ import type { Product } from "../data/products";
 export function ProductPage({ product, relatedProducts }: { product: Product; relatedProducts: Product[] }) {
   const addToCart = useCartStore((s) => s.addToCart);
   const [quantity, setQuantity] = useState(1);
-  const [subscription, setSubscription] = useState(false);
   const [activeTab, setActiveTab] = useState<"benefits" | "ingredients" | "reviews" | "faq">("benefits");
+  const variationAttributes = product.attributes?.filter((a) => a.variation) ?? [];
+  const hasVariations = (product.variations?.length ?? 0) > 0 && variationAttributes.length > 0;
+
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!hasVariations) return;
+
+    // Prefer a concrete variation as the initial selection to avoid "invalid" combinations.
+    const first = product.variations?.find((v) => v.inStock) ?? product.variations?.[0];
+    if (!first) return;
+
+    const initial: Record<string, string> = {};
+    for (const a of variationAttributes) {
+      const key = a.name.trim().toLowerCase();
+      if (!key) continue;
+      const fromVariation = first.attributes[key];
+      if (fromVariation) initial[key] = fromVariation;
+      else if (a.options.length === 1) initial[key] = a.options[0]!;
+    }
+    setSelectedOptions(initial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id]);
+
+  const selectedVariation = useMemo(() => {
+    if (!hasVariations) return undefined;
+    const requiredKeys = variationAttributes
+      .map((a) => a.name.trim().toLowerCase())
+      .filter(Boolean);
+    if (requiredKeys.some((k) => !selectedOptions[k])) return undefined;
+
+    return product.variations?.find((v) =>
+      requiredKeys.every((k) => v.attributes[k] === selectedOptions[k]),
+    );
+  }, [hasVariations, product.variations, selectedOptions, variationAttributes]);
+
+  const displayPrice = selectedVariation?.price ?? product.price;
+  const displayOriginalPrice = selectedVariation?.originalPrice ?? product.originalPrice;
+  const displayImage = selectedVariation?.image ?? product.image;
+  const displayInStock = selectedVariation ? selectedVariation.inStock : product.inStock;
+  const displayStockCount = selectedVariation?.stockCount ?? product.stockCount;
 
   const discount = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -52,7 +92,7 @@ export function ProductPage({ product, relatedProducts }: { product: Product; re
         {/* Gallery */}
         <div>
           <div className="relative rounded-xl overflow-hidden bg-secondary aspect-square">
-            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+            <img src={displayImage} alt={product.name} className="w-full h-full object-cover" />
             {discount > 0 && (
               <span className="absolute top-4 right-4 bg-accent text-white px-3 py-1 rounded-full text-sm" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}>
                 Save {discount}%
@@ -97,10 +137,10 @@ export function ProductPage({ product, relatedProducts }: { product: Product; re
           {/* Price */}
           <div className="flex items-baseline gap-3 mt-4">
             <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: "32px", color: "var(--primary)" }}>
-              ${product.price.toFixed(2)}
+              ${displayPrice.toFixed(2)}
             </span>
-            {product.originalPrice && (
-              <span className="text-lg text-muted-foreground line-through">${product.originalPrice.toFixed(2)}</span>
+            {displayOriginalPrice && (
+              <span className="text-lg text-muted-foreground line-through">${displayOriginalPrice.toFixed(2)}</span>
             )}
           </div>
 
@@ -115,36 +155,54 @@ export function ProductPage({ product, relatedProducts }: { product: Product; re
 
           {/* Availability */}
           <div className="mt-4">
-            {product.inStock ? (
+            {displayInStock ? (
               <span className="text-sm text-primary flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-primary inline-block" /> In Stock
-                {product.stockCount && product.stockCount <= 5 && <span className="text-destructive ml-2">Only {product.stockCount} left!</span>}
+                {displayStockCount && displayStockCount <= 5 && <span className="text-destructive ml-2">Only {displayStockCount} left!</span>}
               </span>
             ) : (
               <span className="text-sm text-destructive">Out of Stock</span>
             )}
           </div>
 
-          {/* Subscription Option */}
-          <div className="mt-6 p-4 bg-secondary rounded-xl">
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={subscription}
-                onChange={() => setSubscription(!subscription)}
-                className="accent-primary mt-1"
-              />
-              <div>
-                <span className="text-sm" style={{ fontWeight: 500 }}>Subscribe & Save 20%</span>
-                <p className="text-xs text-muted-foreground mt-0.5">Auto-deliver every 30 days. Cancel anytime.</p>
-                {subscription && (
-                  <span className="text-sm text-primary mt-1 inline-block" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}>
-                    ${(product.price * 0.8).toFixed(2)}/delivery
-                  </span>
-                )}
-              </div>
-            </label>
-          </div>
+          {/* Variations */}
+          {hasVariations && (
+            <div className="mt-6 space-y-4">
+              {variationAttributes.map((attr) => {
+                const key = attr.name.trim().toLowerCase();
+                const selected = selectedOptions[key] ?? "";
+                return (
+                  <div key={key}>
+                    <p className="text-sm mb-2" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}>
+                      {attr.name} {selected ? <span className="text-muted-foreground" style={{ fontWeight: 400 }}>({selected})</span> : null}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {attr.options.map((opt) => {
+                        const active = selected === opt;
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => setSelectedOptions((prev) => ({ ...prev, [key]: opt }))}
+                            className={`px-3 py-2 rounded-lg text-sm border transition-colors ${active
+                              ? "border-primary bg-primary/5 text-primary"
+                              : "border-border hover:border-primary/40"
+                              }`}
+                          >
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {Object.keys(selectedOptions).length > 0 && !selectedVariation && (
+                <p className="text-sm text-destructive">This combination is not available. Please choose different options.</p>
+              )}
+            </div>
+          )}
 
           {/* Add to Cart */}
           <div className="flex items-center gap-3 mt-6">
@@ -155,9 +213,24 @@ export function ProductPage({ product, relatedProducts }: { product: Product; re
             </div>
             <button
               onClick={() => {
-                addToCart(product, quantity, subscription);
+                if (hasVariations && !selectedVariation) {
+                  toast.error("Please select options before adding to cart");
+                  return;
+                }
+                addToCart(product, {
+                  quantity,
+                  variation: selectedVariation
+                    ? {
+                      id: selectedVariation.id,
+                      price: selectedVariation.price,
+                      image: selectedVariation.image,
+                      attributes: selectedVariation.attributes,
+                    }
+                    : undefined,
+                });
                 toast.success(`${product.name} added to cart`);
               }}
+              disabled={!displayInStock || (hasVariations && !selectedVariation)}
               className="flex-1 flex items-center justify-center gap-2 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
               style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}
             >
@@ -182,9 +255,8 @@ export function ProductPage({ product, relatedProducts }: { product: Product; re
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 sm:px-6 py-3 text-sm whitespace-nowrap border-b-2 transition-colors ${
-                activeTab === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
+              className={`px-4 sm:px-6 py-3 text-sm whitespace-nowrap border-b-2 transition-colors ${activeTab === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
               style={{ fontFamily: "Poppins, sans-serif", fontWeight: activeTab === tab ? 600 : 400 }}
             >
               {tab === "benefits" ? "Key Benefits" : tab === "ingredients" ? "Ingredients" : tab === "reviews" ? `Reviews (${product.reviewCount})` : "FAQ"}

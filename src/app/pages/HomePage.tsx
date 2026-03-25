@@ -54,19 +54,19 @@ export function HomePage() {
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link
-                  href="/category/herbal-supplements"
+                  href="/shop"
                   className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
                   style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}
                 >
                   Shop Now <ArrowRight className="w-4 h-4" />
                 </Link>
-                <Link
+                {/* <Link
                   href="/category/snacks-food"
                   className="px-6 py-3 bg-white border-2 border-primary text-primary rounded-lg hover:bg-primary/5 transition-colors"
                   style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}
                 >
                   Explore Products
-                </Link>
+                </Link> */}
               </div>
               <div className="flex items-center gap-6 mt-8 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1"><CheckCircle className="w-4 h-4 text-primary" /> Authentic Products</span>

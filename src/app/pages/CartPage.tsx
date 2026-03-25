@@ -11,7 +11,7 @@ export function CartPage() {
   const items = useCartStore((s) => s.items);
   const removeFromCart = useCartStore((s) => s.removeFromCart);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
-  const totalPrice = useCartStore((s) => s.items.reduce((sum, i) => sum + i.product.price * i.quantity, 0));
+  const totalPrice = useCartStore((s) => s.items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0));
   const couponCode = useCartStore((s) => s.couponCode);
   const setCouponCode = useCartStore((s) => s.setCouponCode);
   const discount = useCartStore((s) => s.discount);
@@ -56,7 +56,7 @@ export function CartPage() {
         <ShoppingBag className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
         <h1 style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: "28px" }}>Your Cart is Empty</h1>
         <p className="text-muted-foreground mt-2 mb-6">Discover authentic products and start exploring our collection.</p>
-        <Link href="/category/herbal-supplements" className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}>
+        <Link href="/shop" className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}>
           Start Shopping <ArrowRight className="w-4 h-4" />
         </Link>
 
@@ -82,31 +82,35 @@ export function CartPage() {
         {/* Cart Items */}
         <div className="lg:col-span-2 space-y-4">
           {items.map((item) => (
-            <div key={item.product.id} className="flex gap-4 p-4 bg-white rounded-xl border border-border">
-              <Link href={`/product/${item.product.id}`} className="shrink-0">
-                <img src={item.product.image} alt={item.product.name} className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg object-cover" />
+            <div key={item.id} className="flex gap-4 p-4 bg-white rounded-xl border border-border">
+              <Link href={`/shop/${item.product.id}`} className="shrink-0">
+                <img src={item.image} alt={item.name} className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg object-cover" />
               </Link>
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs text-muted-foreground">{item.product.brand}</p>
-                    <Link href={`/product/${item.product.id}`} className="text-sm hover:text-primary transition-colors line-clamp-2" style={{ fontWeight: 500 }}>
-                      {item.product.name}
+                    <Link href={`/shop/${item.product.id}`} className="text-sm hover:text-primary transition-colors line-clamp-2" style={{ fontWeight: 500 }}>
+                      {item.name}
                     </Link>
-                    {item.subscription && (
-                      <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded mt-1 inline-block">Subscribe & Save 20%</span>
+                    {item.variationAttributes && Object.keys(item.variationAttributes).length > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {Object.entries(item.variationAttributes)
+                          .map(([k, v]) => `${k}: ${v}`)
+                          .join(" • ")}
+                      </p>
                     )}
                   </div>
-                  <button onClick={() => removeFromCart(item.product.id)} className="p-1 text-muted-foreground hover:text-destructive" aria-label="Remove item"><X className="w-4 h-4" /></button>
+                  <button onClick={() => removeFromCart(item.id)} className="p-1 text-muted-foreground hover:text-destructive" aria-label="Remove item"><X className="w-4 h-4" /></button>
                 </div>
                 <div className="flex items-center justify-between mt-3">
                   <div className="flex items-center border border-border rounded-lg">
-                    <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="p-1.5 hover:bg-secondary" aria-label="Decrease"><Minus className="w-3 h-3" /></button>
+                    <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="p-1.5 hover:bg-secondary" aria-label="Decrease"><Minus className="w-3 h-3" /></button>
                     <span className="px-3 text-sm">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.product.id, item.quantity + 1)} className="p-1.5 hover:bg-secondary" aria-label="Increase"><Plus className="w-3 h-3" /></button>
+                    <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="p-1.5 hover:bg-secondary" aria-label="Increase"><Plus className="w-3 h-3" /></button>
                   </div>
                   <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600, color: "var(--primary)" }}>
-                    ${(item.product.price * item.quantity * (item.subscription ? 0.8 : 1)).toFixed(2)}
+                    ${(item.unitPrice * item.quantity).toFixed(2)}
                   </span>
                 </div>
               </div>

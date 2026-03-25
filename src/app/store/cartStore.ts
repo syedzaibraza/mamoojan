@@ -2,18 +2,34 @@ import { create } from "zustand";
 import type { Product } from "../data/products";
 
 interface CartItem {
+  id: string; // unique line id (product + variation)
   product: Product;
   quantity: number;
-  subscription?: boolean;
+  unitPrice: number;
+  image: string;
+  name: string;
+  variationId?: string;
+  variationAttributes?: Record<string, string>;
 }
 
 interface CartState {
   items: CartItem[];
   couponCode: string;
   discount: number;
-  addToCart: (product: Product, quantity?: number, subscription?: boolean) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  addToCart: (
+    product: Product,
+    options?: {
+      quantity?: number;
+      variation?: {
+        id: string;
+        price: number;
+        image?: string;
+        attributes: Record<string, string>;
+      };
+    },
+  ) => void;
+  removeFromCart: (lineId: string) => void;
+  updateQuantity: (lineId: string, quantity: number) => void;
   clearCart: () => void;
   setCouponCode: (code: string) => void;
   applyCoupon: () => void;
@@ -24,38 +40,61 @@ export const useCartStore = create<CartState>((set, get) => ({
   couponCode: "",
   discount: 0,
 
-  addToCart: (product, quantity = 1, subscription = false) => {
+  addToCart: (product, options) => {
+    const quantity = options?.quantity ?? 1;
+    const variation = options?.variation;
     set((state) => {
-      const existing = state.items.find((i) => i.product.id === product.id);
+      const lineId = `${product.id}:${variation?.id ?? "base"}`;
+      const existing = state.items.find((i) => i.id === lineId);
       if (existing) {
         return {
           items: state.items.map((i) =>
-            i.product.id === product.id
-              ? { ...i, quantity: i.quantity + quantity, subscription: subscription || i.subscription }
-              : i
+            i.id === lineId
+              ? { ...i, quantity: i.quantity + quantity }
+              : i,
           ),
         };
       }
-      return { items: [...state.items, { product, quantity, subscription }] };
+
+      const unitPrice = variation?.price ?? product.price;
+      const image = variation?.image ?? product.image;
+      const name = product.name;
+      return {
+        items: [
+          ...state.items,
+          {
+            id: lineId,
+            product,
+            quantity,
+            unitPrice,
+            image,
+            name,
+            variationId: variation?.id,
+            variationAttributes: variation?.attributes,
+          },
+        ],
+      };
     });
   },
 
-  removeFromCart: (productId) => {
+  removeFromCart: (lineId) => {
     set((state) => ({
-      items: state.items.filter((i) => i.product.id !== productId),
+      items: state.items.filter((i) => i.id !== lineId),
     }));
   },
 
-  updateQuantity: (productId, quantity) => {
+  updateQuantity: (lineId, quantity) => {
     if (quantity <= 0) {
       set((state) => ({
-        items: state.items.filter((i) => i.product.id !== productId),
+        items: state.items.filter((i) => i.id !== lineId),
       }));
       return;
     }
 
     set((state) => ({
-      items: state.items.map((i) => (i.product.id === productId ? { ...i, quantity } : i)),
+      items: state.items.map((i) =>
+        i.id === lineId ? { ...i, quantity } : i,
+      ),
     }));
   },
 
@@ -78,4 +117,3 @@ export const useCartStore = create<CartState>((set, get) => ({
     }
   },
 }));
-

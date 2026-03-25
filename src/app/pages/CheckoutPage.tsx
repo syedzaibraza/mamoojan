@@ -9,7 +9,7 @@ type Step = "shipping" | "payment" | "review";
 
 export function CheckoutPage() {
   const items = useCartStore((s) => s.items);
-  const totalPrice = useCartStore((s) => s.items.reduce((sum, i) => sum + i.product.price * i.quantity, 0));
+  const totalPrice = useCartStore((s) => s.items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0));
   const discount = useCartStore((s) => s.discount);
   const clearCart = useCartStore((s) => s.clearCart);
   const [step, setStep] = useState<Step>("shipping");
@@ -156,13 +156,20 @@ export function CheckoutPage() {
               <h2 className="mb-6" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600, fontSize: "20px" }}>Order Review</h2>
               <div className="space-y-4 mb-6">
                 {items.map((item) => (
-                  <div key={item.product.id} className="flex items-center gap-3">
-                    <img src={item.product.image} alt={item.product.name} className="w-12 h-12 rounded object-cover" />
+                  <div key={item.id} className="flex items-center gap-3">
+                    <img src={item.image} alt={item.name} className="w-12 h-12 rounded object-cover" />
                     <div className="flex-1">
-                      <p className="text-sm" style={{ fontWeight: 500 }}>{item.product.name}</p>
+                      <p className="text-sm" style={{ fontWeight: 500 }}>{item.name}</p>
+                      {item.variationAttributes && Object.keys(item.variationAttributes).length > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          {Object.entries(item.variationAttributes)
+                            .map(([k, v]) => `${k}: ${v}`)
+                            .join(" • ")}
+                        </p>
+                      )}
                       <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                     </div>
-                    <span className="text-sm">${(item.product.price * item.quantity).toFixed(2)}</span>
+                    <span className="text-sm">${(item.unitPrice * item.quantity).toFixed(2)}</span>
                   </div>
                 ))}
               </div>

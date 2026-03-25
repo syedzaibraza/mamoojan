@@ -17,6 +17,22 @@ export interface Product {
   dosage: string;
   inStock: boolean;
   stockCount?: number;
+
+  // WooCommerce (optional) - used on product detail pages.
+  attributes?: Array<{
+    name: string;
+    options: string[];
+    variation: boolean;
+  }>;
+  variations?: Array<{
+    id: string;
+    price: number;
+    originalPrice?: number;
+    inStock: boolean;
+    stockCount?: number;
+    image?: string;
+    attributes: Record<string, string>; // normalized keys, e.g. { size: "Large" }
+  }>;
 }
 
 export const products: Product[] = [
