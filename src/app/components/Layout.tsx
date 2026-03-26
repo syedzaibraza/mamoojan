@@ -10,7 +10,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <Header />
       <main className="flex-1">{children}</main>
       <Footer />
-      <Toaster position="bottom-right" richColors />
+      <Toaster position="top-right" />
     </div>
   );
 }

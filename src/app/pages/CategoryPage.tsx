@@ -49,13 +49,17 @@ export function CategoryPage({
       result = result.filter((p) => p.price >= range.min && p.price < range.max);
     }
     if (minRating > 0) {
-      result = result.filter((p) => p.rating >= minRating);
+      result = result.filter((p) => (p.rating ?? p.average_rating ?? 0) >= minRating);
     }
 
     switch (sortBy) {
       case "price-asc": result.sort((a, b) => a.price - b.price); break;
       case "price-desc": result.sort((a, b) => b.price - a.price); break;
-      case "rating": result.sort((a, b) => b.rating - a.rating); break;
+      case "rating":
+        result.sort(
+          (a, b) => (b.rating ?? b.average_rating ?? 0) - (a.rating ?? a.average_rating ?? 0),
+        );
+        break;
       case "newest": result.sort((a, b) => Number(b.id) - Number(a.id)); break;
       default: result.sort((a, b) => b.reviewCount - a.reviewCount); break;
     }

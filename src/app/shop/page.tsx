@@ -106,6 +106,7 @@ function mapWooToProduct(p: WooProduct): Product {
     healthGoals: [],
     dietTypes,
     description: short || p.name,
+    short_description: short || p.name,
     benefits: short
       ? short
           .split(". ")

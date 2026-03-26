@@ -18,7 +18,7 @@ function getBrandDetails(allProducts: Product[]) {
     const brandProducts = allProducts.filter((p) => p.brand === brand);
     const avgRating =
       brandProducts.length > 0
-        ? brandProducts.reduce((a, p) => a + p.rating, 0) / brandProducts.length
+        ? brandProducts.reduce((a, p) => a + (p.rating ?? p.average_rating ?? 0), 0) / brandProducts.length
         : 0;
 
     return {

@@ -3,16 +3,39 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Star, ShoppingCart, Heart, Share2, Shield, Truck, RotateCcw, ChevronRight, ThumbsUp, Minus, Plus } from "lucide-react";
-import { reviews } from "../data/products";
+import Lightbox from "yet-another-react-lightbox";
+import "yet-another-react-lightbox/styles.css";
+import { reviews as staticReviews } from "../data/products";
 import { ProductCard } from "../components/ProductCard";
 import { useCartStore } from "../store/cartStore";
 import { toast } from "sonner";
 import type { Product } from "../data/products";
 
-export function ProductPage({ product, relatedProducts }: { product: Product; relatedProducts: Product[] }) {
+export type ProductReview = {
+  id: string;
+  author: string;
+  rating: number;
+  date: string;
+  title: string;
+  text: string;
+  helpful: number;
+  verified?: boolean;
+};
+
+export function ProductPage({
+  product,
+  relatedProducts,
+  productReviews,
+}: {
+  product: Product;
+  relatedProducts: Product[];
+  productReviews?: ProductReview[];
+}) {
   const addToCart = useCartStore((s) => s.addToCart);
   const [quantity, setQuantity] = useState(1);
-  const [activeTab, setActiveTab] = useState<"benefits" | "ingredients" | "reviews" | "faq">("benefits");
+  const [activeTab, setActiveTab] = useState<"description" | "additional-info" | "reviews" | "faq">("description");
+  const [isZoomOpen, setIsZoomOpen] = useState(false);
+  const [zoomIndex, setZoomIndex] = useState(0);
   const variationAttributes = product.attributes?.filter((a) => a.variation) ?? [];
   const hasVariations = (product.variations?.length ?? 0) > 0 && variationAttributes.length > 0;
 
@@ -54,20 +77,37 @@ export function ProductPage({ product, relatedProducts }: { product: Product; re
   const displayImage = selectedVariation?.image ?? product.image;
   const displayInStock = selectedVariation ? selectedVariation.inStock : product.inStock;
   const displayStockCount = selectedVariation?.stockCount ?? product.stockCount;
+  const displayRating = product.rating ?? product.average_rating ?? 0;
 
-  const discount = product.originalPrice
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+  const discount = displayOriginalPrice
+    ? Math.round(((displayOriginalPrice - displayPrice) / displayOriginalPrice) * 100)
     : 0;
 
   const safeRelatedProducts = relatedProducts.filter((p) => p.id !== product.id).slice(0, 4);
+  const displayReviews: ProductReview[] =
+    productReviews ?? staticReviews.map((r) => ({ ...r, verified: true }));
+  const galleryImages = useMemo(() => {
+    const all = [...(product.images ?? []), displayImage].filter(Boolean) as string[];
+    return Array.from(new Set(all));
+  }, [product.images, displayImage]);
+  const lightboxSlides = useMemo(
+    () => galleryImages.map((src) => ({ src })),
+    [galleryImages],
+  );
+  const [activeImage, setActiveImage] = useState(displayImage);
 
-  const ratingBreakdown = [
-    { stars: 5, percent: 68 },
-    { stars: 4, percent: 22 },
-    { stars: 3, percent: 7 },
-    { stars: 2, percent: 2 },
-    { stars: 1, percent: 1 },
-  ];
+  useEffect(() => {
+    setActiveImage(displayImage);
+  }, [displayImage, product.id]);
+
+  const ratingBreakdown = useMemo(() => {
+    const total = displayReviews.length;
+    return [5, 4, 3, 2, 1].map((stars) => {
+      const count = displayReviews.filter((r) => r.rating === stars).length;
+      const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+      return { stars, percent };
+    });
+  }, [displayReviews]);
 
   const faqs = [
     { q: `What are the benefits of ${product.name}?`, a: product.benefits.join(". ") + "." },
@@ -92,7 +132,18 @@ export function ProductPage({ product, relatedProducts }: { product: Product; re
         {/* Gallery */}
         <div>
           <div className="relative rounded-xl overflow-hidden bg-secondary aspect-square">
-            <img src={displayImage} alt={product.name} className="w-full h-full object-cover" />
+            <button
+              type="button"
+              onClick={() => {
+                const idx = Math.max(0, galleryImages.indexOf(activeImage));
+                setZoomIndex(idx);
+                setIsZoomOpen(true);
+              }}
+              className="block w-full h-full text-left"
+              aria-label="Zoom product image"
+            >
+              <img src={activeImage} alt={product.name} className="w-full h-full object-cover" />
+            </button>
             {discount > 0 && (
               <span className="absolute top-4 right-4 bg-accent text-white px-3 py-1 rounded-full text-sm" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}>
                 Save {discount}%
@@ -108,6 +159,27 @@ export function ProductPage({ product, relatedProducts }: { product: Product; re
               </div>
             )}
           </div>
+          {galleryImages.length > 1 && (
+            <div className="grid grid-cols-5 gap-2 mt-3">
+              {galleryImages.map((img, idx) => {
+                const isActive = img === activeImage;
+                return (
+                  <button
+                    key={`${img}-${idx}`}
+                    type="button"
+                    onClick={() => {
+                      setActiveImage(img);
+                      setZoomIndex(idx);
+                    }}
+                    className={`rounded-lg overflow-hidden border ${isActive ? "border-primary" : "border-border"}`}
+                    aria-label={`Select image ${idx + 1}`}
+                  >
+                    <img src={img} alt={`${product.name} ${idx + 1}`} className="w-full aspect-square object-cover" />
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Product Info */}
@@ -127,10 +199,10 @@ export function ProductPage({ product, relatedProducts }: { product: Product; re
           <div className="flex items-center gap-3 mt-3">
             <div className="flex">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} className={`w-5 h-5 ${i < Math.floor(product.rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}`} />
+                <Star key={i} className={`w-5 h-5 ${i < Math.floor(displayRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}`} />
               ))}
             </div>
-            <span className="text-sm">{product.rating}</span>
+            <span className="text-sm">{displayRating}</span>
             <span className="text-sm text-muted-foreground">({product.reviewCount.toLocaleString()} reviews)</span>
           </div>
 
@@ -144,7 +216,10 @@ export function ProductPage({ product, relatedProducts }: { product: Product; re
             )}
           </div>
 
-          <p className="text-muted-foreground mt-4">{product.description}</p>
+          <div
+            className="text-muted-foreground mt-4"
+            dangerouslySetInnerHTML={{ __html: product.short_description }}
+          />
 
           {/* Diet Types */}
           <div className="flex flex-wrap gap-2 mt-4">
@@ -251,7 +326,7 @@ export function ProductPage({ product, relatedProducts }: { product: Product; re
       {/* Tabs Section */}
       <div className="border-t border-border pt-8 mb-12">
         <div className="flex gap-0 border-b border-border overflow-x-auto">
-          {(["benefits", "ingredients", "reviews", "faq"] as const).map((tab) => (
+          {(["description", "additional-info", "reviews", "faq"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -259,27 +334,22 @@ export function ProductPage({ product, relatedProducts }: { product: Product; re
                 }`}
               style={{ fontFamily: "Poppins, sans-serif", fontWeight: activeTab === tab ? 600 : 400 }}
             >
-              {tab === "benefits" ? "Key Benefits" : tab === "ingredients" ? "Ingredients" : tab === "reviews" ? `Reviews (${product.reviewCount})` : "FAQ"}
+              {tab === "description" ? "Description" : tab === "additional-info" ? "Additional Info" : tab === "reviews" ? `Reviews (${product.reviewCount})` : "FAQ"}
             </button>
           ))}
         </div>
 
         <div className="py-8">
-          {activeTab === "benefits" && (
-            <div className="max-w-2xl">
-              <h3 className="mb-4" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600, fontSize: "20px" }}>Health Benefits</h3>
-              <ul className="space-y-3">
-                {product.benefits.map((benefit) => (
-                  <li key={benefit} className="flex items-start gap-3">
-                    <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">✓</span>
-                    <span>{benefit}</span>
-                  </li>
-                ))}
-              </ul>
+          {activeTab === "description" && (
+            <div className="max-w-full">
+              <div
+                className="text-gray-700"
+                dangerouslySetInnerHTML={{ __html: product.description }}
+              />
             </div>
           )}
 
-          {activeTab === "ingredients" && (
+          {activeTab === "additional-info" && (
             <div className="max-w-2xl">
               <h3 className="mb-4" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600, fontSize: "20px" }}>Full Ingredient List</h3>
               <p className="text-muted-foreground mb-4">{product.ingredients}</p>
@@ -294,10 +364,10 @@ export function ProductPage({ product, relatedProducts }: { product: Product; re
             <div>
               <div className="grid md:grid-cols-3 gap-8 mb-8">
                 <div className="bg-secondary p-6 rounded-xl text-center">
-                  <p style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: "48px", color: "var(--primary)" }}>{product.rating}</p>
+                  <p style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: "48px", color: "var(--primary)" }}>{displayRating}</p>
                   <div className="flex justify-center mt-2">
                     {[...Array(5)].map((_, i) => (
-                      <Star key={i} className={`w-5 h-5 ${i < Math.floor(product.rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}`} />
+                      <Star key={i} className={`w-5 h-5 ${i < Math.floor(displayRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}`} />
                     ))}
                   </div>
                   <p className="text-sm text-muted-foreground mt-2">{product.reviewCount.toLocaleString()} reviews</p>
@@ -316,34 +386,45 @@ export function ProductPage({ product, relatedProducts }: { product: Product; re
                 </div>
               </div>
 
-              <div className="space-y-6">
-                {reviews.map((review) => (
-                  <div key={review.id} className="border-b border-border pb-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm">{review.author[0]}</div>
-                        <div>
-                          <p className="text-sm" style={{ fontWeight: 500 }}>{review.author}</p>
-                          <div className="flex items-center gap-2">
-                            <div className="flex">
-                              {[...Array(5)].map((_, i) => (
-                                <Star key={i} className={`w-3 h-3 ${i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}`} />
-                              ))}
+              {displayReviews.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-border bg-secondary/40 p-6 text-center">
+                  <p className="text-base" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}>
+                    No reviews yet
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Be the first to share your experience with this product.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {displayReviews.map((review) => (
+                    <div key={review.id} className="border-b border-border pb-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm">{review.author[0]}</div>
+                          <div>
+                            <p className="text-sm" style={{ fontWeight: 500 }}>{review.author}</p>
+                            <div className="flex items-center gap-2">
+                              <div className="flex">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star key={i} className={`w-3 h-3 ${i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}`} />
+                                ))}
+                              </div>
+                              <span className="text-xs text-muted-foreground">{review.date}</span>
                             </div>
-                            <span className="text-xs text-muted-foreground">{review.date}</span>
                           </div>
                         </div>
+                        {review.verified !== false && (
+                          <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded">Verified Purchase</span>
+                        )}
                       </div>
-                      <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded">Verified Purchase</span>
+                      <p className="mt-3 text-sm text-muted-foreground"
+                        dangerouslySetInnerHTML={{ __html: review.text }}
+                      />
                     </div>
-                    <h4 className="mt-3 text-sm" style={{ fontWeight: 500 }}>{review.title}</h4>
-                    <p className="text-sm text-muted-foreground mt-1">{review.text}</p>
-                    <button className="flex items-center gap-1 mt-3 text-xs text-muted-foreground hover:text-foreground">
-                      <ThumbsUp className="w-3 h-3" /> Helpful ({review.helpful})
-                    </button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -375,6 +456,13 @@ export function ProductPage({ product, relatedProducts }: { product: Product; re
           </div>
         </section>
       )}
+
+      <Lightbox
+        open={isZoomOpen}
+        close={() => setIsZoomOpen(false)}
+        index={zoomIndex}
+        slides={lightboxSlides}
+      />
     </div>
   );
 }

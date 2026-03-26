@@ -116,7 +116,9 @@ export function ShopClient({
         result.sort((a, b) => b.price - a.price);
         break;
       case "rating":
-        result.sort((a, b) => b.rating - a.rating);
+        result.sort(
+          (a, b) => (b.rating ?? b.average_rating ?? 0) - (a.rating ?? a.average_rating ?? 0),
+        );
         break;
       case "newest":
         result.sort((a, b) => Number(b.id) - Number(a.id));

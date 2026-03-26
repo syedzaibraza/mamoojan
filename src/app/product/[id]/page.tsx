@@ -1,11 +1,15 @@
 import { ProductPage } from "../../pages/ProductPage";
+import type { ProductReview } from "../../pages/ProductPage";
 import { mapWooToProduct } from "../../lib/woocommerce/mapWooToProduct";
 import type { Product } from "../../data/products";
 
 type WooProductLike = {
+  average_rating: number;
   id: number;
-  categories?: Array<{ id: number; name: string; slug: string }>;
   type?: string;
+  description?: string;
+  short_description?: string;
+  images?: Array<{ src?: string }>;
   attributes?: Array<{ name: string; variation?: boolean; options?: string[] }>;
 };
 
@@ -20,13 +24,22 @@ type WooVariationLike = {
   attributes?: Array<{ name: string; option: string }>;
 };
 
+type WooReviewLike = {
+  id: number;
+  reviewer?: string;
+  review?: string;
+  rating?: number;
+  date_created?: string;
+  verified?: boolean;
+};
+
 function createEmptyProduct(id: string): Product {
   return {
     id,
     name: "",
     brand: "",
     price: 0,
-    rating: 0,
+    average_rating: 0,
     reviewCount: 0,
     image: "/Mamoojan-Logo.png",
     category: "",
@@ -34,6 +47,7 @@ function createEmptyProduct(id: string): Product {
     labels: [],
     dietTypes: [],
     description: "",
+    short_description: "",
     benefits: [],
     ingredients: "",
     dosage: "",
@@ -50,13 +64,12 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const requestTimeoutMs = 15_000;
 
   if (!wcUrlRaw || !wcKey || !wcSecret) {
-    return <ProductPage product={createEmptyProduct(id)} relatedProducts={[]} />;
+    return <ProductPage product={createEmptyProduct(id)} relatedProducts={[]} productReviews={[]} />;
   }
 
   const wcUrl = wcUrlRaw.replace(/\/$/, "");
   const productIdNum = Number(id);
 
-  // Fetch single product.
   const productEndpoint = new URL(`${wcUrl}/wp-json/wc/v3/products/${productIdNum}`);
   productEndpoint.searchParams.set("consumer_key", wcKey);
   productEndpoint.searchParams.set("consumer_secret", wcSecret);
@@ -70,26 +83,24 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       signal: AbortSignal.timeout(requestTimeoutMs),
     });
   } catch {
-    return <ProductPage product={createEmptyProduct(id)} relatedProducts={[]} />;
+    return <ProductPage product={createEmptyProduct(id)} relatedProducts={[]} productReviews={[]} />;
   }
 
   if (!productRes.ok) {
-    return <ProductPage product={createEmptyProduct(id)} relatedProducts={[]} />;
+    return <ProductPage product={createEmptyProduct(id)} relatedProducts={[]} productReviews={[]} />;
   }
 
   const wooProduct = (await productRes.json()) as any as WooProductLike;
-  const baseProduct = mapWooToProduct(wooProduct as any);
-
-  const attributes =
+  const mappedAttributes =
     wooProduct.attributes?.map((a) => ({
       name: a.name,
       variation: Boolean(a.variation),
       options: Array.isArray(a.options) ? a.options : [],
     })) ?? [];
 
-  const variationAttributes = attributes.filter((a) => a.variation);
+  const variationAttributes = mappedAttributes.filter((a) => a.variation);
+  let mappedVariations: NonNullable<Product["variations"]> = [];
 
-  let variations: NonNullable<Product["variations"]> = [];
   if ((wooProduct.type ?? "") === "variable" || variationAttributes.length > 0) {
     const variationsEndpoint = new URL(`${wcUrl}/wp-json/wc/v3/products/${productIdNum}/variations`);
     variationsEndpoint.searchParams.set("consumer_key", wcKey);
@@ -98,16 +109,17 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     variationsEndpoint.searchParams.set("page", "1");
 
     try {
-      const res = await fetch(variationsEndpoint.toString(), {
+      const variationsRes = await fetch(variationsEndpoint.toString(), {
         method: "GET",
         headers: { Accept: "application/json" },
         cache: "no-store",
         signal: AbortSignal.timeout(requestTimeoutMs),
       });
-      if (res.ok) {
-        const data = (await res.json()) as WooVariationLike[];
-        variations = data.map((v) => {
-          const price = Number(v.price ?? v.sale_price ?? v.regular_price ?? 0);
+
+      if (variationsRes.ok) {
+        const variationRows = (await variationsRes.json()) as WooVariationLike[];
+        mappedVariations = variationRows.map((v) => {
+          const parsedPrice = Number(v.price ?? v.sale_price ?? v.regular_price ?? 0);
           const regular = v.regular_price ? Number(v.regular_price) : undefined;
           const sale = v.sale_price ? Number(v.sale_price) : undefined;
           const inStock =
@@ -124,7 +136,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
           return {
             id: String(v.id),
-            price: Number.isFinite(price) ? price : 0,
+            price: Number.isFinite(parsedPrice) ? parsedPrice : 0,
             originalPrice:
               regular && sale && sale > 0 && regular > sale ? regular : undefined,
             inStock,
@@ -135,50 +147,63 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         });
       }
     } catch {
-      // No variations available (network issue); keep product usable.
-      variations = [];
+      mappedVariations = [];
     }
   }
 
   const product: Product = {
-    ...baseProduct,
-    attributes: variationAttributes,
-    variations,
+    ...mapWooToProduct(wooProduct as any),
+    description: wooProduct.description ?? "",
+    average_rating: wooProduct.average_rating ?? 0,
+    short_description: wooProduct.short_description ?? "",
+    images: (wooProduct.images ?? [])
+      .map((img) => img.src)
+      .filter((src): src is string => Boolean(src)),
+    attributes: mappedAttributes,
+    variations: mappedVariations,
   };
-  console.log('product', product);
-  console.log('wooProduct', wooProduct);
-  console.log('baseProduct', baseProduct);
 
-  // Fetch a few related products from the first Woo category.
-  const firstCategoryId = wooProduct.categories?.[0]?.id;
-  let relatedProducts: Product[] = [];
-  if (firstCategoryId) {
-    const endpoint = new URL(`${wcUrl}/wp-json/wc/v3/products`);
-    endpoint.searchParams.set("consumer_key", wcKey);
-    endpoint.searchParams.set("consumer_secret", wcSecret);
-    endpoint.searchParams.set("per_page", "4");
-    endpoint.searchParams.set("page", "1");
-    endpoint.searchParams.set("status", "publish");
-    endpoint.searchParams.set("category", String(firstCategoryId));
+  let productReviews: ProductReview[] = [];
+  const reviewsEndpoint = new URL(`${wcUrl}/wp-json/wc/v3/products/reviews`);
+  reviewsEndpoint.searchParams.set("consumer_key", wcKey);
+  reviewsEndpoint.searchParams.set("consumer_secret", wcSecret);
+  reviewsEndpoint.searchParams.set("product", String(productIdNum));
+  reviewsEndpoint.searchParams.set("per_page", "20");
+  reviewsEndpoint.searchParams.set("page", "1");
 
-    let res: Response;
-    try {
-      res = await fetch(endpoint.toString(), {
-        method: "GET",
-        headers: { Accept: "application/json" },
-        cache: "no-store",
-        signal: AbortSignal.timeout(requestTimeoutMs),
+  try {
+    const reviewsRes = await fetch(reviewsEndpoint.toString(), {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(requestTimeoutMs),
+    });
+
+    if (reviewsRes.ok) {
+      const rows = (await reviewsRes.json()) as WooReviewLike[];
+      productReviews = rows.map((r) => {
+        const reviewText = (r.review ?? "").trim();
+        const firstSentence = reviewText.split(". ").find(Boolean) ?? "Customer review";
+        const title = firstSentence.length > 90 ? `${firstSentence.slice(0, 87)}...` : firstSentence;
+
+        return {
+          id: String(r.id),
+          author: r.reviewer?.trim() || "Verified Customer",
+          rating: Number.isFinite(r.rating) ? Number(r.rating) : 5,
+          date: r.date_created
+            ? new Date(r.date_created).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+            : "",
+          title,
+          text: reviewText || "No review text provided.",
+          helpful: 0,
+          verified: r.verified !== false,
+        };
       });
-    } catch {
-      res = new Response(null, { status: 599 });
     }
-
-    if (res.ok) {
-      const data = (await res.json()) as any[];
-      relatedProducts = data.map((p) => mapWooToProduct(p as any));
-    }
+  } catch {
+    productReviews = [];
   }
 
-  return <ProductPage product={product} relatedProducts={relatedProducts} />;
+  return <ProductPage product={product} relatedProducts={[]} productReviews={productReviews} />;
 }
 

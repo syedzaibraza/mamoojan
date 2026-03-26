@@ -12,6 +12,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const addToCart = useCartStore((s) => s.addToCart);
+  const displayRating = product.rating ?? product.average_rating ?? 0;
   const discount = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
@@ -78,7 +79,7 @@ export function ProductCard({ product }: ProductCardProps) {
             {[...Array(5)].map((_, i) => (
               <Star
                 key={i}
-                className={`w-3 h-3 ${i < Math.floor(product.rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}`}
+                className={`w-3 h-3 ${i < Math.floor(displayRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}`}
               />
             ))}
           </div>
