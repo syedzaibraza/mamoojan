@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "next dev",
+    "dev:https": "next dev --experimental-https --hostname localhost --port 3000",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

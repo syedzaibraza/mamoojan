@@ -1,11 +1,87 @@
  "use client";
 
-import { useState } from "react";
+import { type ChangeEvent, useMemo, useState } from "react";
 import Link from "next/link";
 import { CreditCard, Lock, Check, ChevronRight } from "lucide-react";
 import { useCartStore } from "../store/cartStore";
+import { getAcceptJsUrl } from "../lib/payments/authorizenet";
 
 type Step = "shipping" | "payment" | "review";
+
+type CheckoutForm = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  address1: string;
+  address2: string;
+  city: string;
+  state: string;
+  postcode: string;
+  country: string;
+  cardNumber: string;
+  cardExpiry: string;
+  cardCvv: string;
+};
+
+const initialForm: CheckoutForm = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  address1: "",
+  address2: "",
+  city: "",
+  state: "",
+  postcode: "",
+  country: "US",
+  cardNumber: "",
+  cardExpiry: "",
+  cardCvv: "",
+};
+
+function normalizeDigits(input: string) {
+  return input.replace(/\D/g, "");
+}
+
+function parseExpiry(expiry: string) {
+  const normalized = expiry.replace(/\s/g, "");
+  const [month, year] = normalized.split("/");
+  if (!month || !year) return null;
+  const mm = normalizeDigits(month);
+  const yy = normalizeDigits(year);
+  if (mm.length < 1 || yy.length < 2) return null;
+  const monthNum = Number(mm);
+  if (!Number.isFinite(monthNum) || monthNum < 1 || monthNum > 12) return null;
+  return { month: monthNum.toString().padStart(2, "0"), year: yy.slice(-2) };
+}
+
+function validateShipping(form: CheckoutForm): string | null {
+  if (!form.firstName.trim() || !form.lastName.trim()) return "First and last name are required.";
+  if (!form.email.trim() || !form.email.includes("@")) return "A valid email is required.";
+  if (!form.address1.trim() || !form.city.trim() || !form.postcode.trim()) {
+    return "Address, city, and ZIP/postal code are required.";
+  }
+  if (!form.country.trim()) return "Country is required.";
+  return null;
+}
+
+function validateCard(form: CheckoutForm): string | null {
+  const cardNumber = normalizeDigits(form.cardNumber);
+  const cvv = normalizeDigits(form.cardCvv);
+  const expiry = parseExpiry(form.cardExpiry);
+  if (cardNumber.length < 13 || cardNumber.length > 19) return "Enter a valid card number.";
+  if (!expiry) return "Enter card expiry as MM/YY.";
+  if (cvv.length < 3 || cvv.length > 4) return "Enter a valid CVC/CVV.";
+  return null;
+}
+
+function isSecureOriginForAcceptJs() {
+  if (typeof window === "undefined") return false;
+  if (window.isSecureContext) return true;
+  const hostname = window.location.hostname;
+  return hostname === "localhost" || hostname === "127.0.0.1";
+}
 
 export function CheckoutPage() {
   const items = useCartStore((s) => s.items);
@@ -14,10 +90,33 @@ export function CheckoutPage() {
   const clearCart = useCartStore((s) => s.clearCart);
   const [step, setStep] = useState<Step>("shipping");
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [orderNumber, setOrderNumber] = useState<string | null>(null);
+  const [form, setForm] = useState<CheckoutForm>(initialForm);
 
   const shipping = totalPrice >= 49 ? 0 : 5.99;
   const discountAmount = (totalPrice * discount) / 100;
   const finalTotal = totalPrice - discountAmount + shipping;
+  const couponCode = useCartStore((s) => s.couponCode);
+
+  const wcLineItems = useMemo(() => {
+    return items
+      .map((item) => {
+        const productId = Number(item.product.id);
+        const variationId = item.variationId ? Number(item.variationId) : undefined;
+        return {
+          lineId: item.id,
+          productId: Number.isFinite(productId) ? productId : NaN,
+          variationId: variationId && Number.isFinite(variationId) ? variationId : undefined,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          name: item.name,
+        };
+      })
+      .filter((item) => Number.isFinite(item.productId));
+  }, [items]);
 
   const steps: { key: Step; label: string }[] = [
     { key: "shipping", label: "Shipping" },
@@ -32,7 +131,9 @@ export function CheckoutPage() {
           <Check className="w-8 h-8 text-primary" />
         </div>
         <h1 style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: "28px" }}>Order Confirmed!</h1>
-        <p className="text-muted-foreground mt-2">Thank you for your purchase. Your order #MJ-2026-{Math.floor(Math.random() * 9000) + 1000} has been placed.</p>
+        <p className="text-muted-foreground mt-2">
+          {successMessage || "Thank you for your purchase."} {orderNumber ? `Order #${orderNumber}.` : ""}
+        </p>
         <p className="text-sm text-muted-foreground mt-4">You'll receive a confirmation email with tracking details shortly.</p>
         <Link href="/" className="inline-block mt-8 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}>
           Continue Shopping
@@ -49,6 +150,237 @@ export function CheckoutPage() {
       </div>
     );
   }
+
+  const handleFormChange =
+    (field: keyof CheckoutForm) => (event: ChangeEvent<HTMLInputElement>) => {
+      setForm((prev) => ({ ...prev, [field]: event.target.value }));
+    };
+
+  const goToPayment = () => {
+    const shippingError = validateShipping(form);
+    setErrorMessage(shippingError);
+    if (shippingError) return;
+    setStep("payment");
+  };
+
+  const goToReview = () => {
+    const cardError = validateCard(form);
+    setErrorMessage(cardError);
+    if (cardError) return;
+    setStep("review");
+  };
+
+  async function ensureAcceptJsLoaded() {
+    if (typeof window === "undefined") {
+      throw new Error("Payment can only be processed in the browser.");
+    }
+    if (window.Accept && typeof window.Accept.dispatchData === "function") return;
+
+    const primaryScriptUrl = getAcceptJsUrl();
+    const fallbackScriptUrl = primaryScriptUrl.includes("jstest.authorize.net")
+      ? "https://js.authorize.net/v1/Accept.js"
+      : "https://jstest.authorize.net/v1/Accept.js";
+
+    const waitForAccept = async () => {
+      const startedAt = Date.now();
+      while (Date.now() - startedAt < 5000) {
+        if (window.Accept && typeof window.Accept.dispatchData === "function") return;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      throw new Error("Authorize.net SDK loaded but Accept.js is unavailable.");
+    };
+
+    const loadScript = async (scriptUrl: string) => {
+      await new Promise<void>((resolve, reject) => {
+        const existingScript = document.querySelector<HTMLScriptElement>(
+          `script[src="${scriptUrl}"]`,
+        );
+
+        if (existingScript?.getAttribute("data-loaded") === "true") {
+          resolve();
+          return;
+        }
+
+        const script = existingScript || document.createElement("script");
+        if (!existingScript) {
+          script.src = scriptUrl;
+          script.async = true;
+          document.body.appendChild(script);
+        }
+
+        const timeout = window.setTimeout(() => {
+          script.removeEventListener("load", onLoad);
+          script.removeEventListener("error", onError);
+          reject(new Error("Timed out while loading payment SDK."));
+        }, 7000);
+
+        const onLoad = () => {
+          window.clearTimeout(timeout);
+          script.setAttribute("data-loaded", "true");
+          resolve();
+        };
+        const onError = () => {
+          window.clearTimeout(timeout);
+          reject(new Error("Failed to load payment SDK."));
+        };
+
+        script.addEventListener("load", onLoad, { once: true });
+        script.addEventListener("error", onError, { once: true });
+      });
+
+      await waitForAccept();
+    };
+
+    try {
+      await loadScript(primaryScriptUrl);
+      return;
+    } catch {
+      // Remove stale script nodes and retry with fallback host.
+      document.querySelectorAll('script[src*="authorize.net/v1/Accept.js"]').forEach((node) => {
+        node.parentElement?.removeChild(node);
+      });
+      await loadScript(`${fallbackScriptUrl}?t=${Date.now()}`);
+    }
+  }
+
+  async function tokenizeCard() {
+    if (!isSecureOriginForAcceptJs()) {
+      throw new Error(
+        "Authorize.net requires HTTPS. Open checkout on https:// or use https local dev (npm run dev:https).",
+      );
+    }
+
+    await ensureAcceptJsLoaded();
+    const apiLoginId =
+      process.env.NEXT_PUBLIC_AUTHNET_API_LOGIN_ID ||
+      process.env.NEXT_PUBLIC_AUTHORIZE_NET_API_LOGIN_ID;
+    const clientKey =
+      process.env.NEXT_PUBLIC_AUTHNET_CLIENT_KEY || process.env.NEXT_PUBLIC_AUTHORIZE_NET_CLIENT_KEY;
+    if (!apiLoginId || !clientKey) {
+      throw new Error(
+        "Missing public payment credentials. Set NEXT_PUBLIC_AUTHORIZE_NET_API_LOGIN_ID/NEXT_PUBLIC_AUTHORIZE_NET_CLIENT_KEY (or NEXT_PUBLIC_AUTHNET_API_LOGIN_ID/NEXT_PUBLIC_AUTHNET_CLIENT_KEY).",
+      );
+    }
+    if (apiLoginId.length > 25) {
+      throw new Error(
+        "Invalid public API Login ID. Use your real Authorize.net API Login ID (max 25 chars), not a pk_/sk_ key.",
+      );
+    }
+    const expiry = parseExpiry(form.cardExpiry);
+    if (!expiry) throw new Error("Invalid card expiry.");
+
+    return new Promise<{ dataDescriptor: string; dataValue: string }>((resolve, reject) => {
+      const secureData = {
+        authData: {
+          apiLoginID: apiLoginId,
+          clientKey,
+        },
+        cardData: {
+          cardNumber: normalizeDigits(form.cardNumber),
+          month: expiry.month,
+          year: expiry.year,
+          cardCode: normalizeDigits(form.cardCvv),
+        },
+      };
+
+      window.Accept.dispatchData(secureData, (response) => {
+        const resultCode = response.messages?.resultCode;
+        if (resultCode !== "Ok" || !response.opaqueData?.dataDescriptor || !response.opaqueData?.dataValue) {
+          const paymentError =
+            response.messages?.message?.[0]?.text || "Could not tokenize payment details.";
+          reject(new Error(paymentError));
+          return;
+        }
+        resolve({
+          dataDescriptor: response.opaqueData.dataDescriptor,
+          dataValue: response.opaqueData.dataValue,
+        });
+      });
+    });
+  }
+
+  const placeOrder = async () => {
+    setErrorMessage(null);
+    if (wcLineItems.length !== items.length) {
+      setErrorMessage("Some cart items are not synced with WooCommerce product IDs.");
+      return;
+    }
+
+    const shippingError = validateShipping(form);
+    if (shippingError) {
+      setErrorMessage(shippingError);
+      setStep("shipping");
+      return;
+    }
+    const cardError = validateCard(form);
+    if (cardError) {
+      setErrorMessage(cardError);
+      setStep("payment");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const opaqueData = await tokenizeCard();
+
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          opaqueData,
+          billing: {
+            firstName: form.firstName.trim(),
+            lastName: form.lastName.trim(),
+            email: form.email.trim(),
+            phone: form.phone.trim() || undefined,
+            address1: form.address1.trim(),
+            address2: form.address2.trim() || undefined,
+            city: form.city.trim(),
+            state: form.state.trim() || undefined,
+            postcode: form.postcode.trim(),
+            country: form.country.trim(),
+          },
+          shipping: {
+            firstName: form.firstName.trim(),
+            lastName: form.lastName.trim(),
+            address1: form.address1.trim(),
+            address2: form.address2.trim() || undefined,
+            city: form.city.trim(),
+            state: form.state.trim() || undefined,
+            postcode: form.postcode.trim(),
+            country: form.country.trim(),
+          },
+          cart: {
+            items: wcLineItems,
+            shippingTotal: shipping,
+            couponCode: couponCode || undefined,
+            discountPercent: discount,
+            total: Number(finalTotal.toFixed(2)),
+          },
+        }),
+      });
+
+      const data = (await response.json().catch(() => ({}))) as {
+        ok?: boolean;
+        message?: string;
+        orderNumber?: string;
+      };
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.message || "Checkout failed. Please try another payment method.");
+      }
+
+      setSuccessMessage(data.message || "Payment complete.");
+      setOrderNumber(data.orderNumber || null);
+      setOrderPlaced(true);
+      clearCart();
+      setForm(initialForm);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Checkout failed.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
@@ -76,6 +408,11 @@ export function CheckoutPage() {
 
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
+          {errorMessage && (
+            <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">
+              {errorMessage}
+            </div>
+          )}
           {/* Shipping */}
           {step === "shipping" && (
             <div className="bg-white border border-border rounded-xl p-6">
@@ -83,30 +420,46 @@ export function CheckoutPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm text-muted-foreground">First Name</label>
-                  <input type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="John" />
+                  <input value={form.firstName} onChange={handleFormChange("firstName")} type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="John" />
                 </div>
                 <div>
                   <label className="text-sm text-muted-foreground">Last Name</label>
-                  <input type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="Doe" />
+                  <input value={form.lastName} onChange={handleFormChange("lastName")} type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="Doe" />
                 </div>
                 <div className="col-span-2">
                   <label className="text-sm text-muted-foreground">Email</label>
-                  <input type="email" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="john@example.com" />
+                  <input value={form.email} onChange={handleFormChange("email")} type="email" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="john@example.com" />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-sm text-muted-foreground">Phone (optional)</label>
+                  <input value={form.phone} onChange={handleFormChange("phone")} type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="+1 555 555 5555" />
                 </div>
                 <div className="col-span-2">
                   <label className="text-sm text-muted-foreground">Address</label>
-                  <input type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="123 Main St" />
+                  <input value={form.address1} onChange={handleFormChange("address1")} type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="123 Main St" />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-sm text-muted-foreground">Address 2 (optional)</label>
+                  <input value={form.address2} onChange={handleFormChange("address2")} type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="Apt, suite, unit" />
                 </div>
                 <div>
                   <label className="text-sm text-muted-foreground">City</label>
-                  <input type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="New York" />
+                  <input value={form.city} onChange={handleFormChange("city")} type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="New York" />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">State (optional)</label>
+                  <input value={form.state} onChange={handleFormChange("state")} type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="NY" />
                 </div>
                 <div>
                   <label className="text-sm text-muted-foreground">ZIP Code</label>
-                  <input type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="10001" />
+                  <input value={form.postcode} onChange={handleFormChange("postcode")} type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="10001" />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Country</label>
+                  <input value={form.country} onChange={handleFormChange("country")} type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="US" />
                 </div>
               </div>
-              <button onClick={() => setStep("payment")} className="w-full mt-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}>
+              <button onClick={goToPayment} className="w-full mt-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}>
                 Continue to Payment
               </button>
             </div>
@@ -117,9 +470,9 @@ export function CheckoutPage() {
             <div className="bg-white border border-border rounded-xl p-6">
               <h2 className="mb-6" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600, fontSize: "20px" }}>Payment Method</h2>
               <div className="space-y-3 mb-6">
-                {["Credit Card", "PayPal", "Apple Pay"].map((method) => (
+                {["Credit Card (Authorize.net Accept.js)"].map((method) => (
                   <label key={method} className="flex items-center gap-3 p-3 border border-border rounded-lg cursor-pointer hover:bg-secondary transition-colors">
-                    <input type="radio" name="payment" defaultChecked={method === "Credit Card"} className="accent-primary" />
+                    <input type="radio" name="payment" defaultChecked={method.startsWith("Credit Card")} className="accent-primary" />
                     <CreditCard className="w-5 h-5 text-muted-foreground" />
                     <span className="text-sm">{method}</span>
                   </label>
@@ -128,22 +481,25 @@ export function CheckoutPage() {
               <div className="space-y-4">
                 <div>
                   <label className="text-sm text-muted-foreground">Card Number</label>
-                  <input type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="4242 4242 4242 4242" />
+                  <input value={form.cardNumber} onChange={handleFormChange("cardNumber")} autoComplete="cc-number" type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="4111 1111 1111 1111" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm text-muted-foreground">Expiry</label>
-                    <input type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="MM/YY" />
+                    <input value={form.cardExpiry} onChange={handleFormChange("cardExpiry")} autoComplete="cc-exp" type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="MM/YY" />
                   </div>
                   <div>
                     <label className="text-sm text-muted-foreground">CVC</label>
-                    <input type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="123" />
+                    <input value={form.cardCvv} onChange={handleFormChange("cardCvv")} autoComplete="cc-csc" type="password" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="123" />
                   </div>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Card data is tokenized by Authorize.net Accept.js and never sent as raw PAN to your Next.js server.
+                </p>
               </div>
               <div className="flex gap-3 mt-6">
                 <button onClick={() => setStep("shipping")} className="px-6 py-3 border border-border rounded-lg hover:bg-secondary text-sm">Back</button>
-                <button onClick={() => setStep("review")} className="flex-1 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}>
+                <button onClick={goToReview} className="flex-1 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}>
                   Review Order
                 </button>
               </div>
@@ -176,14 +532,12 @@ export function CheckoutPage() {
               <div className="flex gap-3">
                 <button onClick={() => setStep("payment")} className="px-6 py-3 border border-border rounded-lg hover:bg-secondary text-sm">Back</button>
                 <button
-                  onClick={() => {
-                    setOrderPlaced(true);
-                    clearCart();
-                  }}
+                  onClick={placeOrder}
+                  disabled={isSubmitting}
                   className="flex-1 flex items-center justify-center gap-2 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
                   style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}
                 >
-                  <Lock className="w-4 h-4" /> Place Order
+                  <Lock className="w-4 h-4" /> {isSubmitting ? "Processing..." : "Place Order"}
                 </button>
               </div>
             </div>
