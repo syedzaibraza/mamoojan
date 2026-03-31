@@ -1,10 +1,11 @@
- "use client";
+"use client";
 
-import { type ChangeEvent, useMemo, useState } from "react";
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { CreditCard, Lock, Check, ChevronRight } from "lucide-react";
 import { useCartStore } from "../store/cartStore";
 import { getAcceptJsUrl } from "../lib/payments/authorizenet";
+import { Button } from "../components/ui/button";
 
 type Step = "shipping" | "payment" | "review";
 
@@ -34,7 +35,7 @@ const initialForm: CheckoutForm = {
   city: "",
   state: "",
   postcode: "",
-  country: "US",
+  country: "",
   cardNumber: "",
   cardExpiry: "",
   cardCvv: "",
@@ -56,24 +57,29 @@ function parseExpiry(expiry: string) {
   return { month: monthNum.toString().padStart(2, "0"), year: yy.slice(-2) };
 }
 
-function validateShipping(form: CheckoutForm): string | null {
-  if (!form.firstName.trim() || !form.lastName.trim()) return "First and last name are required.";
-  if (!form.email.trim() || !form.email.includes("@")) return "A valid email is required.";
-  if (!form.address1.trim() || !form.city.trim() || !form.postcode.trim()) {
-    return "Address, city, and ZIP/postal code are required.";
-  }
-  if (!form.country.trim()) return "Country is required.";
-  return null;
+function validateShipping(form: CheckoutForm): Partial<Record<keyof CheckoutForm, string>> {
+  const errors: Partial<Record<keyof CheckoutForm, string>> = {};
+  if (!form.firstName.trim()) errors.firstName = "First name is required.";
+  if (!form.lastName.trim()) errors.lastName = "Last name is required.";
+  if (!form.email.trim()) errors.email = "Email is required.";
+  else if (!form.email.includes("@")) errors.email = "Enter a valid email address.";
+  if (!form.phone.trim()) errors.phone = "Phone number is required.";
+  if (!form.address1.trim()) errors.address1 = "Address is required.";
+  if (!form.city.trim()) errors.city = "City is required.";
+  if (!form.postcode.trim()) errors.postcode = "ZIP/postal code is required.";
+  if (!form.country.trim()) errors.country = "Country is required.";
+  return errors;
 }
 
-function validateCard(form: CheckoutForm): string | null {
+function validateCard(form: CheckoutForm): Partial<Record<keyof CheckoutForm, string>> {
+  const errors: Partial<Record<keyof CheckoutForm, string>> = {};
   const cardNumber = normalizeDigits(form.cardNumber);
   const cvv = normalizeDigits(form.cardCvv);
   const expiry = parseExpiry(form.cardExpiry);
-  if (cardNumber.length < 13 || cardNumber.length > 19) return "Enter a valid card number.";
-  if (!expiry) return "Enter card expiry as MM/YY.";
-  if (cvv.length < 3 || cvv.length > 4) return "Enter a valid CVC/CVV.";
-  return null;
+  if (cardNumber.length < 13 || cardNumber.length > 19) errors.cardNumber = "Enter a valid card number.";
+  if (!expiry) errors.cardExpiry = "Enter expiry as MM/YY.";
+  if (cvv.length < 3 || cvv.length > 4) errors.cardCvv = "Enter a valid CVC/CVV.";
+  return errors;
 }
 
 function isSecureOriginForAcceptJs() {
@@ -81,6 +87,21 @@ function isSecureOriginForAcceptJs() {
   if (window.isSecureContext) return true;
   const hostname = window.location.hostname;
   return hostname === "localhost" || hostname === "127.0.0.1";
+}
+
+function formatCardNumber(value: string) {
+  const digits = normalizeDigits(value).slice(0, 19);
+  return digits.replace(/(.{4})/g, "$1 ").trim();
+}
+
+function formatCardExpiry(value: string) {
+  const digits = normalizeDigits(value).slice(0, 4);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+}
+
+function formatCardCvv(value: string) {
+  return normalizeDigits(value).slice(0, 4);
 }
 
 export function CheckoutPage() {
@@ -92,11 +113,14 @@ export function CheckoutPage() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof CheckoutForm, string>>>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [form, setForm] = useState<CheckoutForm>(initialForm);
+  const acceptJsLoadPromiseRef = useRef<Promise<void> | null>(null);
 
-  const shipping = totalPrice >= 49 ? 0 : 5.99;
+  // const shipping = totalPrice >= 49 ? 0 : 5.99;
+  const shipping = 0;
   const discountAmount = (totalPrice * discount) / 100;
   const finalTotal = totalPrice - discountAmount + shipping;
   const couponCode = useCartStore((s) => s.couponCode);
@@ -146,27 +170,37 @@ export function CheckoutPage() {
     return (
       <div className="max-w-lg mx-auto px-4 py-16 text-center">
         <h1 style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: "28px" }}>Your Cart is Empty</h1>
-        <Link href="/" className="inline-block mt-4 text-primary hover:underline">Return to shop</Link>
+        <Link href="/shop" className="inline-block mt-4 text-primary hover:underline">
+          <Button variant="outline" className="bg-primary text-white hover:bg-primary/90">Return to shop</Button>
+        </Link>
       </div>
     );
   }
 
   const handleFormChange =
     (field: keyof CheckoutForm) => (event: ChangeEvent<HTMLInputElement>) => {
-      setForm((prev) => ({ ...prev, [field]: event.target.value }));
+      const rawValue = event.target.value;
+      let nextValue = rawValue;
+      if (field === "cardNumber") nextValue = formatCardNumber(rawValue);
+      if (field === "cardExpiry") nextValue = formatCardExpiry(rawValue);
+      if (field === "cardCvv") nextValue = formatCardCvv(rawValue);
+      setForm((prev) => ({ ...prev, [field]: nextValue }));
+      setFieldErrors((prev) => ({ ...prev, [field]: undefined }));
     };
 
   const goToPayment = () => {
-    const shippingError = validateShipping(form);
-    setErrorMessage(shippingError);
-    if (shippingError) return;
+    const shippingErrors = validateShipping(form);
+    setFieldErrors((prev) => ({ ...prev, ...shippingErrors }));
+    setErrorMessage(null);
+    if (Object.keys(shippingErrors).length > 0) return;
     setStep("payment");
   };
 
   const goToReview = () => {
-    const cardError = validateCard(form);
-    setErrorMessage(cardError);
-    if (cardError) return;
+    const cardErrors = validateCard(form);
+    setFieldErrors((prev) => ({ ...prev, ...cardErrors }));
+    setErrorMessage(null);
+    if (Object.keys(cardErrors).length > 0) return;
     setStep("review");
   };
 
@@ -231,16 +265,26 @@ export function CheckoutPage() {
       await waitForAccept();
     };
 
-    try {
-      await loadScript(primaryScriptUrl);
-      return;
-    } catch {
-      // Remove stale script nodes and retry with fallback host.
-      document.querySelectorAll('script[src*="authorize.net/v1/Accept.js"]').forEach((node) => {
-        node.parentElement?.removeChild(node);
+    if (!acceptJsLoadPromiseRef.current) {
+      acceptJsLoadPromiseRef.current = (async () => {
+        try {
+          await loadScript(primaryScriptUrl);
+          return;
+        } catch {
+          // Remove stale script nodes and retry with fallback host.
+          document.querySelectorAll('script[src*="authorize.net/v1/Accept.js"]').forEach((node) => {
+            node.parentElement?.removeChild(node);
+          });
+          await loadScript(`${fallbackScriptUrl}?t=${Date.now()}`);
+        }
+      })().finally(() => {
+        if (!(window.Accept && typeof window.Accept.dispatchData === "function")) {
+          acceptJsLoadPromiseRef.current = null;
+        }
       });
-      await loadScript(`${fallbackScriptUrl}?t=${Date.now()}`);
     }
+
+    await acceptJsLoadPromiseRef.current;
   }
 
   async function tokenizeCard() {
@@ -306,15 +350,17 @@ export function CheckoutPage() {
       return;
     }
 
-    const shippingError = validateShipping(form);
-    if (shippingError) {
-      setErrorMessage(shippingError);
+    const shippingErrors = validateShipping(form);
+    if (Object.keys(shippingErrors).length > 0) {
+      setFieldErrors((prev) => ({ ...prev, ...shippingErrors }));
+      setErrorMessage(null);
       setStep("shipping");
       return;
     }
-    const cardError = validateCard(form);
-    if (cardError) {
-      setErrorMessage(cardError);
+    const cardErrors = validateCard(form);
+    if (Object.keys(cardErrors).length > 0) {
+      setFieldErrors((prev) => ({ ...prev, ...cardErrors }));
+      setErrorMessage(null);
       setStep("payment");
       return;
     }
@@ -332,7 +378,7 @@ export function CheckoutPage() {
             firstName: form.firstName.trim(),
             lastName: form.lastName.trim(),
             email: form.email.trim(),
-            phone: form.phone.trim() || undefined,
+            phone: form.phone.trim(),
             address1: form.address1.trim(),
             address2: form.address2.trim() || undefined,
             city: form.city.trim(),
@@ -382,6 +428,25 @@ export function CheckoutPage() {
     }
   };
 
+  // Preload Accept.js to avoid first-click race on Place Order.
+  useEffect(() => {
+    let cancelled = false;
+    if (!isSecureOriginForAcceptJs()) return;
+
+    (async () => {
+      try {
+        await ensureAcceptJsLoaded();
+      } catch {
+        // Ignore preload failures here; checkout click path shows actionable error.
+        if (cancelled) return;
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       {/* Breadcrumb */}
@@ -419,44 +484,52 @@ export function CheckoutPage() {
               <h2 className="mb-6" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600, fontSize: "20px" }}>Shipping Information</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-muted-foreground">First Name</label>
-                  <input value={form.firstName} onChange={handleFormChange("firstName")} type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="John" />
+                  <label className="text-sm text-muted-foreground">First Name *</label>
+                  <input value={form.firstName} onChange={handleFormChange("firstName")} type="text" className={`w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${fieldErrors.firstName ? "border-red-500" : ""}`} placeholder="John" />
+                  {fieldErrors.firstName && <p className="mt-1.5 ml-1 text-xs text-red-600">{fieldErrors.firstName}</p>}
                 </div>
                 <div>
-                  <label className="text-sm text-muted-foreground">Last Name</label>
-                  <input value={form.lastName} onChange={handleFormChange("lastName")} type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="Doe" />
+                  <label className="text-sm text-muted-foreground">Last Name *</label>
+                  <input value={form.lastName} onChange={handleFormChange("lastName")} type="text" className={`w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${fieldErrors.lastName ? "border-red-500" : ""}`} placeholder="Doe" />
+                  {fieldErrors.lastName && <p className="mt-1.5 ml-1 text-xs text-red-600">{fieldErrors.lastName}</p>}
                 </div>
                 <div className="col-span-2">
-                  <label className="text-sm text-muted-foreground">Email</label>
-                  <input value={form.email} onChange={handleFormChange("email")} type="email" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="john@example.com" />
+                  <label className="text-sm text-muted-foreground">Email *</label>
+                  <input value={form.email} onChange={handleFormChange("email")} type="email" className={`w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${fieldErrors.email ? "border-red-500" : ""}`} placeholder="john@example.com" />
+                  {fieldErrors.email && <p className="mt-1.5 ml-1 text-xs text-red-600">{fieldErrors.email}</p>}
                 </div>
                 <div className="col-span-2">
-                  <label className="text-sm text-muted-foreground">Phone (optional)</label>
-                  <input value={form.phone} onChange={handleFormChange("phone")} type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="+1 555 555 5555" />
+                  <label className="text-sm text-muted-foreground">Phone *</label>
+                  <input value={form.phone} onChange={handleFormChange("phone")} type="text" className={`w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${fieldErrors.phone ? "border-red-500" : ""}`} placeholder="+1 555 555 5555" />
+                  {fieldErrors.phone && <p className="mt-1.5 ml-1 text-xs text-red-600">{fieldErrors.phone}</p>}
                 </div>
                 <div className="col-span-2">
-                  <label className="text-sm text-muted-foreground">Address</label>
-                  <input value={form.address1} onChange={handleFormChange("address1")} type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="123 Main St" />
+                  <label className="text-sm text-muted-foreground">Address *</label>
+                  <input value={form.address1} onChange={handleFormChange("address1")} type="text" className={`w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${fieldErrors.address1 ? "border-red-500" : ""}`} placeholder="123 Main St" />
+                  {fieldErrors.address1 && <p className="mt-1.5 ml-1 text-xs text-red-600">{fieldErrors.address1}</p>}
                 </div>
                 <div className="col-span-2">
                   <label className="text-sm text-muted-foreground">Address 2 (optional)</label>
                   <input value={form.address2} onChange={handleFormChange("address2")} type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="Apt, suite, unit" />
                 </div>
                 <div>
-                  <label className="text-sm text-muted-foreground">City</label>
-                  <input value={form.city} onChange={handleFormChange("city")} type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="New York" />
+                  <label className="text-sm text-muted-foreground">City *</label>
+                  <input value={form.city} onChange={handleFormChange("city")} type="text" className={`w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${fieldErrors.city ? "border-red-500" : ""}`} placeholder="New York" />
+                  {fieldErrors.city && <p className="mt-1.5 ml-1 text-xs text-red-600">{fieldErrors.city}</p>}
                 </div>
                 <div>
                   <label className="text-sm text-muted-foreground">State (optional)</label>
                   <input value={form.state} onChange={handleFormChange("state")} type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="NY" />
                 </div>
                 <div>
-                  <label className="text-sm text-muted-foreground">ZIP Code</label>
-                  <input value={form.postcode} onChange={handleFormChange("postcode")} type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="10001" />
+                  <label className="text-sm text-muted-foreground">ZIP Code *</label>
+                  <input value={form.postcode} onChange={handleFormChange("postcode")} type="text" className={`w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${fieldErrors.postcode ? "border-red-500" : ""}`} placeholder="10001" />
+                  {fieldErrors.postcode && <p className="mt-1.5 ml-1 text-xs text-red-600">{fieldErrors.postcode}</p>}
                 </div>
                 <div>
-                  <label className="text-sm text-muted-foreground">Country</label>
-                  <input value={form.country} onChange={handleFormChange("country")} type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="US" />
+                  <label className="text-sm text-muted-foreground">Country *</label>
+                  <input value={form.country} onChange={handleFormChange("country")} type="text" className={`w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${fieldErrors.country ? "border-red-500" : ""}`} placeholder="US" />
+                  {fieldErrors.country && <p className="mt-1.5 ml-1 text-xs text-red-600">{fieldErrors.country}</p>}
                 </div>
               </div>
               <button onClick={goToPayment} className="w-full mt-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}>
@@ -470,7 +543,7 @@ export function CheckoutPage() {
             <div className="bg-white border border-border rounded-xl p-6">
               <h2 className="mb-6" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600, fontSize: "20px" }}>Payment Method</h2>
               <div className="space-y-3 mb-6">
-                {["Credit Card (Authorize.net Accept.js)"].map((method) => (
+                {["Credit Card"].map((method) => (
                   <label key={method} className="flex items-center gap-3 p-3 border border-border rounded-lg cursor-pointer hover:bg-secondary transition-colors">
                     <input type="radio" name="payment" defaultChecked={method.startsWith("Credit Card")} className="accent-primary" />
                     <CreditCard className="w-5 h-5 text-muted-foreground" />
@@ -480,22 +553,25 @@ export function CheckoutPage() {
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm text-muted-foreground">Card Number</label>
-                  <input value={form.cardNumber} onChange={handleFormChange("cardNumber")} autoComplete="cc-number" type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="4111 1111 1111 1111" />
+                  <label className="text-sm text-muted-foreground">Card Number *</label>
+                  <input value={form.cardNumber} onChange={handleFormChange("cardNumber")} autoComplete="cc-number" inputMode="numeric" type="text" className={`w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${fieldErrors.cardNumber ? "border-red-500" : ""}`} placeholder="4111 1111 1111 1111" />
+                  {fieldErrors.cardNumber && <p className="mt-1.5 ml-1 text-xs text-red-600">{fieldErrors.cardNumber}</p>}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm text-muted-foreground">Expiry</label>
-                    <input value={form.cardExpiry} onChange={handleFormChange("cardExpiry")} autoComplete="cc-exp" type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="MM/YY" />
+                    <label className="text-sm text-muted-foreground">Expiry *</label>
+                    <input value={form.cardExpiry} onChange={handleFormChange("cardExpiry")} autoComplete="cc-exp" inputMode="numeric" type="text" className={`w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${fieldErrors.cardExpiry ? "border-red-500" : ""}`} placeholder="MM/YY" />
+                    {fieldErrors.cardExpiry && <p className="mt-1.5 ml-1 text-xs text-red-600">{fieldErrors.cardExpiry}</p>}
                   </div>
                   <div>
-                    <label className="text-sm text-muted-foreground">CVC</label>
-                    <input value={form.cardCvv} onChange={handleFormChange("cardCvv")} autoComplete="cc-csc" type="password" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="123" />
+                    <label className="text-sm text-muted-foreground">CVC *</label>
+                    <input value={form.cardCvv} onChange={handleFormChange("cardCvv")} autoComplete="cc-csc" inputMode="numeric" maxLength={4} type="password" className={`w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${fieldErrors.cardCvv ? "border-red-500" : ""}`} placeholder="123" />
+                    {fieldErrors.cardCvv && <p className="mt-1.5 ml-1 text-xs text-red-600">{fieldErrors.cardCvv}</p>}
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                {/* <p className="text-xs text-muted-foreground">
                   Card data is tokenized by Authorize.net Accept.js and never sent as raw PAN to your Next.js server.
-                </p>
+                </p> */}
               </div>
               <div className="flex gap-3 mt-6">
                 <button onClick={() => setStep("shipping")} className="px-6 py-3 border border-border rounded-lg hover:bg-secondary text-sm">Back</button>

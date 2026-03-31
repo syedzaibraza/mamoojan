@@ -17,7 +17,8 @@ export function CartPage() {
   const discount = useCartStore((s) => s.discount);
   const applyCoupon = useCartStore((s) => s.applyCoupon);
 
-  const shipping = totalPrice >= 49 ? 0 : 5.99;
+  // const shipping = totalPrice >= 49 ? 0 : 5.99;
+  const shipping = 0;
   const discountAmount = (totalPrice * discount) / 100;
   const finalTotal = totalPrice - discountAmount + shipping;
 
@@ -130,7 +131,7 @@ export function CartPage() {
               )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Shipping</span>
-                <span>{shipping === 0 ? <span className="text-primary">Free</span> : `$${shipping.toFixed(2)}`}</span>
+                <span>{shipping === 0 ? <span className="text-primary">Free</span> : `$${(shipping as number).toFixed(2)}`}</span>
               </div>
               {shipping > 0 && (
                 <p className="text-xs text-muted-foreground">Add ${(49 - totalPrice).toFixed(2)} more for free shipping</p>

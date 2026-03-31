@@ -11,7 +11,7 @@ type CheckoutRequestBody = {
     firstName: string;
     lastName: string;
     email: string;
-    phone?: string;
+    phone: string;
     address1: string;
     address2?: string;
     city: string;
@@ -59,6 +59,9 @@ function validatePayload(payload: CheckoutRequestBody) {
   }
   if (!isNonEmptyString(payload.billing.email) || !payload.billing.email.includes("@")) {
     throw new Error("A valid billing email is required.");
+  }
+  if (!isNonEmptyString(payload.billing.phone)) {
+    throw new Error("A valid billing phone number is required.");
   }
   if (!Array.isArray(payload.cart?.items) || payload.cart.items.length === 0) {
     throw new Error("Cart cannot be empty.");
