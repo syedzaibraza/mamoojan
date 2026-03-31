@@ -627,7 +627,7 @@ export function CheckoutPage() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${totalPrice.toFixed(2)}</span></div>
               {discount > 0 && <div className="flex justify-between text-primary"><span>Discount</span><span>-${discountAmount.toFixed(2)}</span></div>}
-              <div className="flex justify-between"><span className="text-muted-foreground">Shipping</span><span>{shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Shipping</span><span>{shipping === 0 ? "Free" : `$${(shipping as number).toFixed(2)}`}</span></div>
               <div className="border-t pt-2 flex justify-between" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700 }}>
                 <span>Total</span>
                 <span style={{ color: "var(--primary)" }}>${finalTotal.toFixed(2)}</span>
