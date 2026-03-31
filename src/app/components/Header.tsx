@@ -50,6 +50,7 @@ export function Header() {
           categories?: WooCategory[];
           total_pages?: number;
         };
+        console.log(firstData);
 
         const categories = firstData.categories ?? [];
         const totalPages = firstData.total_pages ?? 1;

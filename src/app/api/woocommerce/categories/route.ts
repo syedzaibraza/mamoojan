@@ -88,13 +88,15 @@ export async function GET(req: Request): Promise<NextResponse<WooCategoryRespons
     count?: number;
   }>;
 
-  const categories: WooCategory[] = data.map((c) => ({
-    id: c.id,
-    name: c.name,
-    slug: c.slug,
-    parent: c.parent,
-    count: c.count,
-  }));
+  const categories: WooCategory[] = data
+    .filter((c) => c.slug.toLowerCase() !== "uncategorized" && c.name.toLowerCase() !== "uncategorized")
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      parent: c.parent,
+      count: c.count,
+    }));
 
   return NextResponse.json({
     page,
