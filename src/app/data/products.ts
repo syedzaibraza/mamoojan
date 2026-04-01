@@ -411,8 +411,6 @@ export const products: Product[] = [
   },
 ];
 
-export const brands = ["MamooJan", "Focus N Rulz"];
-
 export const categories = [
   { name: "Herbal Supplements", slug: "herbal-supplements", count: 45 },
   { name: "Snacks & Food", slug: "snacks-food", count: 32 },

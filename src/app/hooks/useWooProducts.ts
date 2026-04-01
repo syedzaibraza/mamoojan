@@ -29,7 +29,7 @@ async function fetchWooProducts(): Promise<Product[]> {
 
 export function useWooProducts() {
   return useQuery({
-    queryKey: ["woo-products"],
+    queryKey: ["woo-products", "v2"],
     queryFn: fetchWooProducts,
     staleTime: 5 * 60 * 1000,
   });

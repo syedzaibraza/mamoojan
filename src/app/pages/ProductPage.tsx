@@ -186,7 +186,7 @@ export function ProductPage({
         <div>
           <div className="flex items-start justify-between">
             <div>
-              <Link href="/brands" className="text-sm text-primary hover:underline">{product.brand}</Link>
+              <span className="text-sm text-primary">{product.brand}</span>
               <h1 className="mt-1" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: "28px" }}>{product.name}</h1>
             </div>
             <div className="flex gap-2">

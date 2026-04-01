@@ -51,7 +51,7 @@ export function AboutPage() {
             {[
               { value: "2017", label: "Founded" },
               { value: "140+", label: "Products" },
-              { value: "2", label: "Trusted Brands" },
+              { value: "100%", label: "Quality Focus" },
               { value: "4.7/5", label: "Average Rating" },
             ].map((s) => (
               <div key={s.label}>
@@ -93,10 +93,10 @@ export function AboutPage() {
         </div>
       </section>
 
-      {/* Brands */}
+      {/* Partners */}
       <section className="py-16 bg-secondary/50">
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <h2 className="mb-8" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: "28px" }}>Our Brands & Partners</h2>
+          <h2 className="mb-8" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: "28px" }}>Our Quality Standards</h2>
           <div className="flex flex-wrap justify-center gap-6">
             {["MamooJan", "Focus N Rulz", "Family Owned", "Made with Care", "USA Distribution", "Authentic Products"].map((item) => (
               <div key={item} className="flex items-center gap-2 px-4 py-3 bg-white rounded-lg border border-border">

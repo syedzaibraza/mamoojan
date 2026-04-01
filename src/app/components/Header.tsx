@@ -12,7 +12,6 @@ type NavSubcategory = { name: string; slug: string; image?: { src: string } };
 
 type NavItem =
   | { key: string; name: string; type: "deals"; subcategories: NavSubcategory[] }
-  | { key: string; name: string; type: "brands"; subcategories: NavSubcategory[] }
   | { key: string; name: string; type: "woo"; slug: string; subcategories: NavSubcategory[] };
 
 type SearchProduct = { id: string; name: string; brand: string; price: number; image: string };
@@ -30,7 +29,6 @@ export function Header() {
   const searchRequestId = useRef(0);
   const { data: categoriesData } = useWooCategories();
   const navItems: NavItem[] = categoriesData?.navItems ?? [
-    { key: "brands", name: "Brands", type: "brands", subcategories: [] },
     { key: "deals", name: "Deals", type: "deals", subcategories: [] },
   ];
 
@@ -81,7 +79,6 @@ export function Header() {
 
   const getNavHref = (cat: NavItem) => {
     if (cat.type === "deals") return "/category/deals";
-    if (cat.type === "brands") return "/brands";
     return `/category/${cat.slug}`;
   };
 

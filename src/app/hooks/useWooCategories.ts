@@ -20,12 +20,6 @@ type NavItem =
   | {
       key: string;
       name: string;
-      type: "brands";
-      subcategories: NavSubcategory[];
-    }
-  | {
-      key: string;
-      name: string;
       type: "woo";
       slug: string;
       subcategories: NavSubcategory[];
@@ -85,7 +79,6 @@ function toNavItems(allCategories: WooCategory[]): NavItem[] {
 
   return [
     ...wooItems,
-    { key: "brands", name: "Brands", type: "brands", subcategories: [] },
     { key: "deals", name: "Deals", type: "deals", subcategories: [] },
   ];
 }

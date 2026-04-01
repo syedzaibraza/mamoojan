@@ -36,11 +36,6 @@ export function HomePage() {
 
   const { data: categoriesData } = useWooCategories();
   const categories = categoriesData?.shopCategories ?? [];
-  const allCategories = categoriesData?.allCategories ?? [];
-
-  console.log('All Categories', allCategories);
-  console.log('Categories', categories);
-
 
   const [email, setEmail] = useState("");
   const bestSellers = products.filter((p) => p.labels.includes("Best Seller"));
@@ -107,7 +102,7 @@ export function HomePage() {
       </section>
 
       {/* Section 2: Shop by Theme */}
-      <section className="py-12 md:py-16 bg-white">
+      {/* <section className="py-12 md:py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-10">
             <h2 style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: "28px" }}>Shop by Theme</h2>
@@ -128,7 +123,7 @@ export function HomePage() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Section 3: Featured Categories */}
       <section className="py-12 md:py-16 bg-secondary/50">
