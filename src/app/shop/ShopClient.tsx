@@ -187,6 +187,7 @@ export function ShopClient({
         <h1 className="text-[32px] font-bold">
           Shop
         </h1>
+        <p className="text-muted-foreground mt-2">Find products that match your lifestyle and values</p>
       </div>
 
       {/* Toolbar */}

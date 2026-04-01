@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Minus, Plus, X, ShoppingBag, ArrowRight, Tag, Truck, Shield } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useCartStore } from "../store/cartStore";
 import { ProductCard } from "../components/ProductCard";
 import type { Product } from "../data/products";
@@ -22,34 +23,24 @@ export function CartPage() {
   const discountAmount = (totalPrice * discount) / 100;
   const finalTotal = totalPrice - discountAmount + shipping;
 
-  const [suggestedProducts, setSuggestedProducts] = useState<Product[]>([]);
+  const { data: suggestedProducts = [], isLoading: suggestionsLoading } = useQuery({
+    queryKey: ["popular-products", "v1"],
+    queryFn: async () => {
+      const res = await fetch("/api/woocommerce/products?per_page=8&page=1");
+      if (!res.ok) throw new Error("Failed to fetch popular products.");
+      const data = (await res.json()) as { products?: Product[] };
+      return data.products ?? [];
+    },
+    enabled: items.length === 0,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 24 * 60 * 60 * 1000,
+    retry: 1,
+  });
+
   const suggestedProductsFiltered = useMemo(
     () => suggestedProducts.filter((p) => !items.some((i) => i.product.id === p.id)).slice(0, 4),
     [suggestedProducts, items]
   );
-
-  useEffect(() => {
-    let cancelled = false;
-    async function loadSuggestions() {
-      // Only show suggestions when cart is empty.
-      if (items.length !== 0) return;
-
-      try {
-        const res = await fetch("/api/woocommerce/products?per_page=8&page=1");
-        const data = (await res.json()) as { products?: Product[] };
-        if (cancelled) return;
-        setSuggestedProducts(data.products ?? []);
-      } catch {
-        if (cancelled) return;
-        setSuggestedProducts([]);
-      }
-    }
-
-    loadSuggestions();
-    return () => {
-      cancelled = true;
-    };
-  }, [items.length]);
 
   if (items.length === 0) {
     return (
@@ -63,11 +54,15 @@ export function CartPage() {
 
         <div className="mt-16">
           <h2 className="mb-6" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600, fontSize: "20px" }}>Popular Products</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {suggestedProductsFiltered.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
+          {suggestionsLoading ? (
+            <p className="text-sm text-muted-foreground">Loading popular products...</p>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              {suggestedProductsFiltered.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     );

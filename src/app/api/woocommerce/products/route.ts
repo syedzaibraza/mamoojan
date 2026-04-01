@@ -66,8 +66,9 @@ export async function GET(req: Request) {
   const res = await fetch(endpoint.toString(), {
     method: "GET",
     headers: { Accept: "application/json" },
-    // WooCommerce API is external; do not cache this response.
-    cache: "no-store",
+    ...(search
+      ? { cache: "no-store" }
+      : { next: { revalidate: 120 } }),
   });
 
   if (!res.ok) {
