@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Layout } from "./components/Layout";
+import { QueryProvider } from "./providers/QueryProvider";
 
 export const metadata: Metadata = {
   title: "MamooJan – Connecting Families Around The World",
@@ -16,7 +17,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body style={{ fontFamily: "Inter, sans-serif" }}>
-        <Layout>{children}</Layout>
+        <QueryProvider>
+          <Layout>{children}</Layout>
+        </QueryProvider>
       </body>
     </html>
   );

@@ -121,16 +121,6 @@ function mapWooToProduct(p: WooProduct): Product {
   };
 }
 
-function categoryNameToSlug(categoryName: string) {
-  return categoryName
-    .trim()
-    .toLowerCase()
-    .replace(/&/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
 export default async function ShopPage() {
   const wcUrlRaw = process.env.WC_URL;
   const wcKey = process.env.WC_KEY;
@@ -151,49 +141,6 @@ export default async function ShopPage() {
 
   let page = 1;
   let mappedProducts: Product[] = [];
-
-  // Fetch Woo categories once for the filter sidebar.
-  // We derive a slug from category name (same normalization logic used by ShopClient).
-  type WooCategory = { id: number; name: string; slug: string; parent?: number };
-  let mappedCategories: Array<{ name: string; slug: string }> = [];
-  {
-    let catPage = 1;
-    let allCats: WooCategory[] = [];
-    while (true) {
-      const endpoint = new URL(`${wcUrl}/wp-json/wc/v3/products/categories`);
-      endpoint.searchParams.set("consumer_key", wcKey);
-      endpoint.searchParams.set("consumer_secret", wcSecret);
-      endpoint.searchParams.set("per_page", String(perPage));
-      endpoint.searchParams.set("page", String(catPage));
-
-      let res: Response;
-      try {
-        res = await fetch(endpoint.toString(), {
-          method: "GET",
-          headers: { Accept: "application/json" },
-          cache: "no-store",
-          signal: AbortSignal.timeout(requestTimeoutMs),
-        });
-      } catch {
-        // Network/SSL/DNS issues should not take the whole Shop page down.
-        break;
-      }
-
-      if (!res.ok) break;
-
-      const data = (await res.json()) as WooCategory[];
-      allCats = [...allCats, ...data];
-
-      const totalPages = Number(res.headers.get("X-WP-TotalPages") ?? catPage);
-      if (catPage >= totalPages) break;
-      catPage += 1;
-    }
-
-    mappedCategories = allCats.map((c) => ({
-      name: c.name,
-      slug: categoryNameToSlug(c.name),
-    }));
-  }
 
   while (true) {
     const endpoint = new URL(`${wcUrl}/wp-json/wc/v3/products`);
@@ -237,5 +184,5 @@ export default async function ShopPage() {
     page += 1;
   }
 
-  return <ShopClient products={mappedProducts} categories={mappedCategories} />;
+  return <ShopClient products={mappedProducts} />;
 }

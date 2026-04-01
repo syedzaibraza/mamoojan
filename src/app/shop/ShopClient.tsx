@@ -5,6 +5,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
 import { ProductCard } from "../components/ProductCard";
 import type { Product } from "../data/products";
+import { useWooCategories } from "../hooks/useWooCategories";
+import { useWooProducts } from "../hooks/useWooProducts";
 
 const priceRanges = [
   { label: "Under $15", min: 0, max: 15 },
@@ -72,12 +74,14 @@ function parseCategoryParam(paramValue: string, availableCategories: ShopCategor
 }
 
 export function ShopClient({
-  products,
-  categories,
+  products: initialProducts,
 }: {
   products: Product[];
-  categories: ShopCategory[];
 }) {
+  const { data: categoriesData } = useWooCategories();
+  const { data: cachedProducts } = useWooProducts();
+  const products = cachedProducts ?? initialProducts;
+  const categories = categoriesData?.shopCategories ?? [];
 
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedPriceRange, setSelectedPriceRange] = useState<number | null>(null);

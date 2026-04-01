@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, ShoppingCart, User, Menu, X, ChevronDown, Tag, Store } from "lucide-react";
 import { useCartStore } from "../store/cartStore";
-type WooCategory = { id: number; name: string; slug: string; parent: number };
+import { useWooCategories } from "../hooks/useWooCategories";
 
 type NavSubcategory = { name: string; slug: string };
 
@@ -19,7 +19,6 @@ type SearchProduct = { id: string; name: string; brand: string; price: number; i
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [navItems, setNavItems] = useState<NavItem[]>([]);
   const [activeMenuKey, setActiveMenuKey] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -29,6 +28,11 @@ export function Header() {
   const menuTimeout = useRef<ReturnType<typeof setTimeout>>();
   const searchRef = useRef<HTMLDivElement>(null);
   const searchRequestId = useRef(0);
+  const { data: categoriesData } = useWooCategories();
+  const navItems: NavItem[] = categoriesData?.navItems ?? [
+    { key: "brands", name: "Brands", type: "brands", subcategories: [] },
+    { key: "deals", name: "Deals", type: "deals", subcategories: [] },
+  ];
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -38,70 +42,6 @@ export function Header() {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadWooCategories() {
-      try {
-        const firstRes = await fetch("/api/woocommerce/categories?per_page=100&page=1");
-        const firstData = (await firstRes.json()) as {
-          categories?: WooCategory[];
-          total_pages?: number;
-        };
-        console.log(firstData);
-
-        const categories = firstData.categories ?? [];
-        const totalPages = firstData.total_pages ?? 1;
-        let allCategories = categories;
-
-        for (let p = 2; p <= totalPages; p += 1) {
-          const res = await fetch(`/api/woocommerce/categories?per_page=100&page=${p}`);
-          const data = (await res.json()) as { categories?: WooCategory[] };
-          allCategories = [...allCategories, ...(data.categories ?? [])];
-        }
-
-        if (cancelled) return;
-
-        const topLevel = allCategories.filter((c) => !c.parent);
-        const childrenByParent = new Map<number, WooCategory[]>();
-        for (const c of allCategories) {
-          if (!c.parent) continue;
-          const list = childrenByParent.get(c.parent) ?? [];
-          list.push(c);
-          childrenByParent.set(c.parent, list);
-        }
-
-        const wooItems: NavItem[] = topLevel.map((cat) => {
-          const children = childrenByParent.get(cat.id) ?? [];
-          return {
-            key: `woo-${cat.id}`,
-            name: cat.name,
-            type: "woo",
-            slug: cat.slug,
-            subcategories: children.map((sub) => ({ name: sub.name, slug: sub.slug })),
-          };
-        });
-
-        setNavItems([
-          ...wooItems,
-          { key: "brands", name: "Brands", type: "brands", subcategories: [] },
-          { key: "deals", name: "Deals", type: "deals", subcategories: [] },
-        ]);
-      } catch {
-        if (cancelled) return;
-        setNavItems([
-          { key: "brands", name: "Brands", type: "brands", subcategories: [] },
-          { key: "deals", name: "Deals", type: "deals", subcategories: [] },
-        ]);
-      }
-    }
-
-    loadWooCategories();
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   const handleSearch = async (query: string) => {
