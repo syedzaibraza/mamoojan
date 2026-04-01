@@ -8,6 +8,7 @@ type WooCategory = {
   slug: string;
   parent: number;
   count?: number;
+  image?: { src?: string | null };
 };
 
 type WooCategoryResponse = {
@@ -86,6 +87,7 @@ export async function GET(req: Request): Promise<NextResponse<WooCategoryRespons
     slug: string;
     parent: number;
     count?: number;
+    image?: { src?: string | null };
   }>;
 
   const categories: WooCategory[] = data
@@ -96,6 +98,7 @@ export async function GET(req: Request): Promise<NextResponse<WooCategoryRespons
       slug: c.slug,
       parent: c.parent,
       count: c.count,
+      image: c.image?.src ? { src: c.image.src } : undefined,
     }));
 
   return NextResponse.json({

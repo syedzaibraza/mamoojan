@@ -6,6 +6,7 @@ import { ProductCard } from "../components/ProductCard";
 import { products, blogPosts, categories } from "../data/products";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useState } from "react";
+import { useWooCategories } from "../hooks/useWooCategories";
 
 const themeIcons: Record<string, React.ReactNode> = {
   "Traditional Wellness": <Leaf className="w-6 h-6" />,
@@ -23,15 +24,24 @@ const themes = [
   { name: "Cultural Connection", slug: "cultural-connection", color: "bg-rose-50 text-rose-700 border-rose-200" },
 ];
 
-const categoryImages = [
-  { name: "Herbal Supplements", slug: "herbal-supplements", image: "https://images.unsplash.com/photo-1704597435621-ff7026f124fa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYXR1cmFsJTIwaGVyYmFsJTIwcHJvZHVjdHMlMjBkaXNwbGF5JTIwbWluaW1hbHxlbnwxfHx8fDE3NzMwODc0OTZ8MA&ixlib=rb-4.1.0&q=80&w=1080" },
-  { name: "Snacks & Food", slug: "snacks-food", image: "https://images.unsplash.com/photo-1770124129809-fe1fe6b7c23e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkcmllZCUyMG1hbmdvJTIwZnJ1aXQlMjBzbmFja3N8ZW58MXx8fHwxNzczMDg3NDg4fDA&ixlib=rb-4.1.0&q=80&w=1080" },
-  { name: "Personal Care", slug: "personal-care-wellness", image: "https://images.unsplash.com/photo-1570586790173-a031eec3f21d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb3BwZXIlMjB0b25ndWUlMjBzY3JhcGVyJTIwd2VsbG5lc3N8ZW58MXx8fHwxNzczMDg3NDg5fDA&ixlib=rb-4.1.0&q=80&w=1080" },
-  { name: "Lifestyle", slug: "lifestyle-products", image: "https://images.unsplash.com/photo-1602143407151-7111542de6e8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3YXRlciUyMGJvdHRsZSUyMHN0YWlubGVzcyUyMHN0ZWVsfGVufDF8fHx8MTc3MzA3MjM4MHww&ixlib=rb-4.1.0&q=80&w=1080" },
-  { name: "Celebrations", slug: "celebration-items", image: "https://images.unsplash.com/photo-1763879537802-18dd4a76b3c5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb2xvcmZ1bCUyMHBhcnR5JTIwZmxhZ3MlMjBkZWNvcmF0aW9uJTIwYnVudGluZ3xlbnwxfHx8fDE3NzMwODc0OTF8MA&ixlib=rb-4.1.0&q=80&w=1080" },
-];
+// const categoryImages = [
+//   { name: "Herbal Supplements", slug: "herbal-supplements", image: "https://images.unsplash.com/photo-1704597435621-ff7026f124fa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYXR1cmFsJTIwaGVyYmFsJTIwcHJvZHVjdHMlMjBkaXNwbGF5JTIwbWluaW1hbHxlbnwxfHx8fDE3NzMwODc0OTZ8MA&ixlib=rb-4.1.0&q=80&w=1080" },
+//   { name: "Snacks & Food", slug: "snacks-food", image: "https://images.unsplash.com/photo-1770124129809-fe1fe6b7c23e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkcmllZCUyMG1hbmdvJTIwZnJ1aXQlMjBzbmFja3N8ZW58MXx8fHwxNzczMDg3NDg4fDA&ixlib=rb-4.1.0&q=80&w=1080" },
+//   { name: "Personal Care", slug: "personal-care-wellness", image: "https://images.unsplash.com/photo-1570586790173-a031eec3f21d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb3BwZXIlMjB0b25ndWUlMjBzY3JhcGVyJTIwd2VsbG5lc3N8ZW58MXx8fHwxNzczMDg3NDg5fDA&ixlib=rb-4.1.0&q=80&w=1080" },
+//   { name: "Lifestyle", slug: "lifestyle-products", image: "https://images.unsplash.com/photo-1602143407151-7111542de6e8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3YXRlciUyMGJvdHRsZSUyMHN0YWlubGVzcyUyMHN0ZWVsfGVufDF8fHx8MTc3MzA3MjM4MHww&ixlib=rb-4.1.0&q=80&w=1080" },
+//   { name: "Celebrations", slug: "celebration-items", image: "https://images.unsplash.com/photo-1763879537802-18dd4a76b3c5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb2xvcmZ1bCUyMHBhcnR5JTIwZmxhZ3MlMjBkZWNvcmF0aW9uJTIwYnVudGluZ3xlbnwxfHx8fDE3NzMwODc0OTF8MA&ixlib=rb-4.1.0&q=80&w=1080" },
+// ];
 
 export function HomePage() {
+
+  const { data: categoriesData } = useWooCategories();
+  const categories = categoriesData?.shopCategories ?? [];
+  const allCategories = categoriesData?.allCategories ?? [];
+
+  console.log('All Categories', allCategories);
+  console.log('Categories', categories);
+
+
   const [email, setEmail] = useState("");
   const bestSellers = products.filter((p) => p.labels.includes("Best Seller"));
   const dealProducts = products.filter((p) => p.originalPrice);
@@ -125,21 +135,21 @@ export function HomePage() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between mb-8">
             <h2 style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: "28px" }}>Shop by Category</h2>
-            <Link href="/category/herbal-supplements" className="text-primary text-sm flex items-center gap-1 hover:underline">
+            {/* <Link href="/category/herbal-supplements" className="text-primary text-sm flex items-center gap-1 hover:underline">
               View All <ChevronRight className="w-4 h-4" />
-            </Link>
+            </Link> */}
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {categoryImages.map((cat) => (
+            {categories.map((cat) => (
               <Link
-                key={cat.name}
+                key={cat.slug}
                 href={`/category/${cat.slug}`}
                 className="group relative rounded-xl overflow-hidden aspect-[3/4]"
               >
                 <img
-                  src={cat.image}
-                  alt={cat.name}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  src={cat.image?.src || "/Mamoojan-Logo.png"}
+                  alt={cat.name || ""}
+                  className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500"
                   loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />

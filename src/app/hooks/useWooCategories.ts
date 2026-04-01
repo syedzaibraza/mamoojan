@@ -2,22 +2,46 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-type WooCategory = { id: number; name: string; slug: string; parent: number };
-type NavSubcategory = { name: string; slug: string };
+type WooCategory = {
+  id: number;
+  name: string;
+  slug: string;
+  parent: number;
+  image?: { src: string };
+};
+type NavSubcategory = { name: string; slug: string; image?: { src: string } };
 type NavItem =
-  | { key: string; name: string; type: "deals"; subcategories: NavSubcategory[] }
-  | { key: string; name: string; type: "brands"; subcategories: NavSubcategory[] }
-  | { key: string; name: string; type: "woo"; slug: string; subcategories: NavSubcategory[] };
+  | {
+      key: string;
+      name: string;
+      type: "deals";
+      subcategories: NavSubcategory[];
+    }
+  | {
+      key: string;
+      name: string;
+      type: "brands";
+      subcategories: NavSubcategory[];
+    }
+  | {
+      key: string;
+      name: string;
+      type: "woo";
+      slug: string;
+      subcategories: NavSubcategory[];
+    };
 
 type CategoryResponse = {
   categories?: WooCategory[];
   total_pages?: number;
 };
 
-export type ShopCategory = { name: string; slug: string };
+export type ShopCategory = { name: string; slug: string; image?: { src: string } };
 
 async function fetchWooCategories(): Promise<WooCategory[]> {
-  const firstRes = await fetch("/api/woocommerce/categories?per_page=100&page=1");
+  const firstRes = await fetch(
+    "/api/woocommerce/categories?per_page=100&page=1",
+  );
   if (!firstRes.ok) throw new Error("Failed to fetch categories.");
   const firstData = (await firstRes.json()) as CategoryResponse;
 
@@ -25,7 +49,9 @@ async function fetchWooCategories(): Promise<WooCategory[]> {
   let allCategories = firstData.categories ?? [];
 
   for (let p = 2; p <= totalPages; p += 1) {
-    const res = await fetch(`/api/woocommerce/categories?per_page=100&page=${p}`);
+    const res = await fetch(
+      `/api/woocommerce/categories?per_page=100&page=${p}`,
+    );
     if (!res.ok) throw new Error("Failed to fetch categories.");
     const data = (await res.json()) as CategoryResponse;
     allCategories = [...allCategories, ...(data.categories ?? [])];
@@ -53,6 +79,7 @@ function toNavItems(allCategories: WooCategory[]): NavItem[] {
     subcategories: (childrenByParent.get(category.id) ?? []).map((sub) => ({
       name: sub.name,
       slug: sub.slug,
+      image: sub.image,
     })),
   }));
 
@@ -65,12 +92,16 @@ function toNavItems(allCategories: WooCategory[]): NavItem[] {
 
 export function useWooCategories() {
   return useQuery({
-    queryKey: ["woo-categories"],
+    queryKey: ["woo-categories", "v2"],
     queryFn: fetchWooCategories,
     select: (allCategories) => ({
       allCategories,
       navItems: toNavItems(allCategories),
-      shopCategories: allCategories.map((c) => ({ name: c.name, slug: c.slug })) as ShopCategory[],
+      shopCategories: allCategories.map((c) => ({
+        name: c.name,
+        slug: c.slug,
+        image: c.image,
+      })) as ShopCategory[],
     }),
   });
 }

@@ -1,4 +1,4 @@
- "use client";
+"use client";
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
@@ -6,7 +6,8 @@ import { SlidersHorizontal, X, ChevronDown, Grid3X3, List } from "lucide-react";
 import { ProductCard } from "../components/ProductCard";
 import type { Product } from "../data/products";
 
-const dietOptions = ["Natural", "Vegetarian", "Eco-Friendly", "Reusable", "Herbal"];
+// const dietOptions = ["Natural", "Vegetarian", "Eco-Friendly", "Reusable", "Herbal"];
+
 const priceRanges = [
   { label: "Under $15", min: 0, max: 15 },
   { label: "$15 - $25", min: 15, max: 25 },
@@ -187,7 +188,7 @@ export function CategoryPage({
           </div>
 
           {/* Diet Type */}
-          <div className="mb-6">
+          {/* <div className="mb-6">
             <h4 className="text-sm mb-3" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}>Diet Type</h4>
             <div className="space-y-2">
               {dietOptions.map((diet) => (
@@ -202,7 +203,7 @@ export function CategoryPage({
                 </label>
               ))}
             </div>
-          </div>
+          </div> */}
 
           {/* Rating */}
           <div className="mb-6">

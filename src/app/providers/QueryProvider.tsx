@@ -24,7 +24,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return undefined;
     return createSyncStoragePersister({
       storage: window.localStorage,
-      key: "mamoojan-react-query-cache-v1",
+      key: "mamoojan-react-query-cache-v2",
       throttleTime: 1000,
     });
   });

@@ -8,7 +8,7 @@ import { Search, ShoppingCart, User, Menu, X, ChevronDown, Tag, Store } from "lu
 import { useCartStore } from "../store/cartStore";
 import { useWooCategories } from "../hooks/useWooCategories";
 
-type NavSubcategory = { name: string; slug: string };
+type NavSubcategory = { name: string; slug: string; image?: { src: string } };
 
 type NavItem =
   | { key: string; name: string; type: "deals"; subcategories: NavSubcategory[] }
@@ -80,9 +80,9 @@ export function Header() {
   };
 
   const getNavHref = (cat: NavItem) => {
-    if (cat.type === "deals") return "/shop?category=deals";
+    if (cat.type === "deals") return "/category/deals";
     if (cat.type === "brands") return "/brands";
-    return `/shop?category=${cat.slug}`;
+    return `/category/${cat.slug}`;
   };
 
   return (
@@ -134,7 +134,7 @@ export function Header() {
                     key={product.id}
                     className="flex items-center gap-3 p-3 w-full text-left hover:bg-secondary transition-colors"
                     onClick={() => {
-                      router.push(`/shop/${product.id}`);
+                      router.push(`/product/${product.id}`);
                       setSearchOpen(false);
                       setSearchQuery("");
                     }}
@@ -214,10 +214,17 @@ export function Header() {
                           {cat.subcategories.map((sub) => (
                             <li key={sub.slug}>
                               <Link
-                                href={`/shop?category=${sub.slug}`}
-                                className="text-sm text-foreground hover:text-muted-foreground transition-colors"
+                                href={`/category/${sub.slug}`}
+                                className="text-sm text-foreground hover:text-muted-foreground transition-colors flex items-center gap-2"
                                 onClick={() => setActiveMenuKey(null)}
                               >
+                                {sub.image?.src && (
+                                  <img
+                                    src={sub.image.src}
+                                    alt={sub.name}
+                                    className="w-6 h-6 rounded object-cover border border-border"
+                                  />
+                                )}
                                 {sub.name}
                               </Link>
                             </li>
