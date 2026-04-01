@@ -148,6 +148,25 @@ export function CheckoutPage() {
     { key: "review", label: "Review" },
   ];
 
+  // Preload Accept.js to avoid first-click race on Place Order.
+  useEffect(() => {
+    let cancelled = false;
+    if (!isSecureOriginForAcceptJs()) return;
+
+    (async () => {
+      try {
+        await ensureAcceptJsLoaded();
+      } catch {
+        // Ignore preload failures here; checkout click path shows actionable error.
+        if (cancelled) return;
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   if (orderPlaced) {
     return (
       <div className="max-w-lg mx-auto px-4 py-16 text-center">
@@ -427,25 +446,6 @@ export function CheckoutPage() {
       setIsSubmitting(false);
     }
   };
-
-  // Preload Accept.js to avoid first-click race on Place Order.
-  useEffect(() => {
-    let cancelled = false;
-    if (!isSecureOriginForAcceptJs()) return;
-
-    (async () => {
-      try {
-        await ensureAcceptJsLoaded();
-      } catch {
-        // Ignore preload failures here; checkout click path shows actionable error.
-        if (cancelled) return;
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">

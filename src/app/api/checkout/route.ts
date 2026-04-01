@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { chargeCardToken, toAuthorizeNetAmount } from "@/app/lib/payments/authorizenet";
-import { createWooOrder, markWooOrderFailed, markWooOrderPaid } from "@/app/lib/woocommerce/orders";
+import { createWooOrder, markWooOrderPaid } from "@/app/lib/woocommerce/orders";
 
 type CheckoutRequestBody = {
   opaqueData: {
@@ -45,6 +45,17 @@ type CheckoutRequestBody = {
   };
   customerNote?: string;
 };
+
+function buildAuthorizeNetInvoiceNumber() {
+  // Authorize.net invoiceNumber max length is 20 characters.
+  // Example output: HD-250330-123456 (15 chars)
+  const now = new Date();
+  const yy = String(now.getUTCFullYear()).slice(-2);
+  const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(now.getUTCDate()).padStart(2, "0");
+  const random = String(Math.floor(Math.random() * 1_000_000)).padStart(6, "0");
+  return `HD-${yy}${mm}${dd}-${random}`;
+}
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
@@ -98,41 +109,40 @@ export async function POST(request: Request) {
       country: payload.billing.country,
     };
 
-    const order = await createWooOrder({
-      billing: payload.billing,
-      shipping: {
-        ...shipping,
-        email: payload.billing.email,
-        phone: payload.billing.phone,
-      },
-      items: payload.cart.items.map((item) => ({
-        productId: item.productId,
-        variationId: item.variationId,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        name: item.name,
-      })),
-      shippingTotal: payload.cart.shippingTotal || 0,
-      couponLines: payload.cart.couponCode ? [{ code: payload.cart.couponCode }] : [],
-      customerNote: payload.customerNote,
-    });
-
     try {
       const paymentResult = await chargeCardToken({
         amount: toAuthorizeNetAmount(payload.cart.total),
         opaqueData: payload.opaqueData,
-        invoiceNumber: order.number,
+        invoiceNumber: buildAuthorizeNetInvoiceNumber(),
         customerEmail: payload.billing.email,
-        orderDescription: `Woo order #${order.number}`,
+        orderDescription: "Headless WooCommerce checkout",
       });
 
       if (!paymentResult.approved || !paymentResult.transactionId) {
-        await markWooOrderFailed(order.id, paymentResult.rawMessage || "Payment declined.");
         return NextResponse.json(
-          { ok: false, orderId: order.id, message: paymentResult.rawMessage || "Payment failed." },
+          { ok: false, message: paymentResult.rawMessage || "Payment failed." },
           { status: 402 },
         );
       }
+
+      const order = await createWooOrder({
+        billing: payload.billing,
+        shipping: {
+          ...shipping,
+          email: payload.billing.email,
+          phone: payload.billing.phone,
+        },
+        items: payload.cart.items.map((item) => ({
+          productId: item.productId,
+          variationId: item.variationId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          name: item.name,
+        })),
+        shippingTotal: payload.cart.shippingTotal || 0,
+        couponLines: payload.cart.couponCode ? [{ code: payload.cart.couponCode }] : [],
+        customerNote: payload.customerNote,
+      });
 
       await markWooOrderPaid(
         order.id,
@@ -148,14 +158,9 @@ export async function POST(request: Request) {
         message: "Payment successful.",
       });
     } catch (paymentError) {
-      await markWooOrderFailed(
-        order.id,
-        paymentError instanceof Error ? paymentError.message : "Payment processing failed.",
-      );
       return NextResponse.json(
         {
           ok: false,
-          orderId: order.id,
           message: paymentError instanceof Error ? paymentError.message : "Payment processing failed.",
         },
         { status: 402 },
