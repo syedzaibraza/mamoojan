@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { chargeCardToken, toAuthorizeNetAmount } from "@/app/lib/payments/authorizenet";
-import { createWooOrder, markWooOrderPaid } from "@/app/lib/woocommerce/orders";
+import { createWooCustomer, createWooOrder, markWooOrderPaid } from "@/app/lib/woocommerce/orders";
 
 type CheckoutRequestBody = {
   opaqueData: {
@@ -15,7 +15,7 @@ type CheckoutRequestBody = {
     address1: string;
     address2?: string;
     city: string;
-    state?: string;
+    state: string;
     postcode: string;
     country: string;
   };
@@ -25,7 +25,7 @@ type CheckoutRequestBody = {
     address1: string;
     address2?: string;
     city: string;
-    state?: string;
+    state: string;
     postcode: string;
     country: string;
   };
@@ -44,6 +44,8 @@ type CheckoutRequestBody = {
     total: number;
   };
   customerNote?: string;
+  createAccount?: boolean;
+  accountPassword?: string;
 };
 
 function buildAuthorizeNetInvoiceNumber() {
@@ -62,6 +64,8 @@ function isNonEmptyString(value: unknown): value is string {
 }
 
 function validatePayload(payload: CheckoutRequestBody) {
+  const allowedCountries = new Set(["USA", "US", "UNITED STATES", "UNITED STATES OF AMERICA"]);
+
   if (!payload?.opaqueData?.dataDescriptor || !payload?.opaqueData?.dataValue) {
     throw new Error("Missing secure payment token.");
   }
@@ -73,6 +77,19 @@ function validatePayload(payload: CheckoutRequestBody) {
   }
   if (!isNonEmptyString(payload.billing.phone)) {
     throw new Error("A valid billing phone number is required.");
+  }
+  if (!isNonEmptyString(payload.billing.state)) {
+    throw new Error("Billing state is required.");
+  }
+  const billingCountry = payload.billing.country?.trim().toUpperCase();
+  if (!billingCountry || !allowedCountries.has(billingCountry)) {
+    throw new Error("We currently deliver only within USA.");
+  }
+  if (payload.shipping) {
+    const shippingCountry = payload.shipping.country?.trim().toUpperCase();
+    if (!shippingCountry || !allowedCountries.has(shippingCountry)) {
+      throw new Error("We currently deliver only within USA.");
+    }
   }
   if (!Array.isArray(payload.cart?.items) || payload.cart.items.length === 0) {
     throw new Error("Cart cannot be empty.");
@@ -90,6 +107,11 @@ function validatePayload(payload: CheckoutRequestBody) {
   }
   if (!Number.isFinite(payload.cart.total) || payload.cart.total <= 0) {
     throw new Error("Invalid checkout total.");
+  }
+  if (payload.createAccount) {
+    if (!isNonEmptyString(payload.accountPassword) || payload.accountPassword.length < 8) {
+      throw new Error("Account password must be at least 8 characters.");
+    }
   }
 }
 
@@ -125,6 +147,22 @@ export async function POST(request: Request) {
         );
       }
 
+      let customerId: number | undefined;
+      if (payload.createAccount) {
+        try {
+          const customer = await createWooCustomer({
+            email: payload.billing.email.trim().toLowerCase(),
+            password: payload.accountPassword!,
+            firstName: payload.billing.firstName.trim(),
+            lastName: payload.billing.lastName.trim(),
+          });
+          customerId = customer.id;
+        } catch {
+          // If customer already exists, proceed as guest checkout instead of failing payment.
+          customerId = undefined;
+        }
+      }
+
       const order = await createWooOrder({
         billing: payload.billing,
         shipping: {
@@ -142,6 +180,7 @@ export async function POST(request: Request) {
         shippingTotal: payload.cart.shippingTotal || 0,
         couponLines: payload.cart.couponCode ? [{ code: payload.cart.couponCode }] : [],
         customerNote: payload.customerNote,
+        customerId,
       });
 
       await markWooOrderPaid(

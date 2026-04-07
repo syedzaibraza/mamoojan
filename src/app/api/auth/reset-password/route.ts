@@ -82,13 +82,17 @@ export async function POST(request: Request) {
 
     if (!email || !key || !password || password.length < 8) {
       return NextResponse.json(
-        { ok: false, message: "Email, reset key, and 8+ char password are required." },
+        {
+          ok: false,
+          message: "Email, reset key, and 8+ char password are required.",
+        },
         { status: 400 },
       );
     }
 
     const endpoint =
-      process.env.WP_RESET_PASSWORD_ENDPOINT || "/wp-json/bdpwr/v1/set-password";
+      process.env.WP_RESET_PASSWORD_ENDPOINT ||
+      "/wp-json/bdpwr/v1/set-password";
     const username = (await getWpUsernameByEmail(email)) || email;
     const attempts: Array<{
       payload: Record<string, string>;
@@ -108,7 +112,13 @@ export async function POST(request: Request) {
       },
       {
         contentType: "application/json",
-        payload: { login: username, code: key, key, new_password: password, password },
+        payload: {
+          login: username,
+          code: key,
+          key,
+          new_password: password,
+          password,
+        },
       },
       {
         contentType: "application/x-www-form-urlencoded",
@@ -124,7 +134,13 @@ export async function POST(request: Request) {
       },
       {
         contentType: "application/x-www-form-urlencoded",
-        payload: { login: username, code: key, key, new_password: password, password },
+        payload: {
+          login: username,
+          code: key,
+          key,
+          new_password: password,
+          password,
+        },
       },
     ];
 
@@ -157,7 +173,8 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : "Unable to reset password.",
+        message:
+          error instanceof Error ? error.message : "Unable to reset password.",
       },
       { status: 500 },
     );

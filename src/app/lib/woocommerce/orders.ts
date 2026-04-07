@@ -6,7 +6,7 @@ type CheckoutAddress = {
   address1: string;
   address2?: string;
   city: string;
-  state?: string;
+  state: string;
   postcode: string;
   country: string;
 };
@@ -30,6 +30,7 @@ type CreateWooOrderInput = {
   shippingTotal: number;
   couponLines?: CheckoutCoupon[];
   customerNote?: string;
+  customerId?: number;
 };
 
 export type WooOrder = {
@@ -37,6 +38,11 @@ export type WooOrder = {
   number: string;
   status: string;
   total: string;
+};
+
+type WooCustomer = {
+  id: number;
+  email: string;
 };
 
 function wcBaseUrl() {
@@ -106,6 +112,7 @@ export async function createWooOrder(input: CreateWooOrderInput): Promise<WooOrd
       process.env.AUTHORIZE_NET_PAYMENT_METHOD_TITLE ||
       process.env.AUTHNET_PAYMENT_METHOD_TITLE ||
       "Credit Card (Authorize.net)",
+    customer_id: input.customerId,
     billing: {
       first_name: input.billing.firstName,
       last_name: input.billing.lastName,
@@ -114,7 +121,7 @@ export async function createWooOrder(input: CreateWooOrderInput): Promise<WooOrd
       address_1: input.billing.address1,
       address_2: input.billing.address2 || "",
       city: input.billing.city,
-      state: input.billing.state || "",
+      state: input.billing.state,
       postcode: input.billing.postcode,
       country: input.billing.country,
     },
@@ -124,7 +131,7 @@ export async function createWooOrder(input: CreateWooOrderInput): Promise<WooOrd
       address_1: input.shipping.address1,
       address_2: input.shipping.address2 || "",
       city: input.shipping.city,
-      state: input.shipping.state || "",
+      state: input.shipping.state,
       postcode: input.shipping.postcode,
       country: input.shipping.country,
     },
@@ -134,6 +141,22 @@ export async function createWooOrder(input: CreateWooOrderInput): Promise<WooOrd
       : [],
     coupon_lines: input.couponLines?.map((coupon) => ({ code: coupon.code })) ?? [],
     customer_note: input.customerNote || "",
+  });
+}
+
+export async function createWooCustomer(input: {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  username?: string;
+}): Promise<WooCustomer> {
+  return wooRequest<WooCustomer>("POST", "/customers", {
+    email: input.email,
+    password: input.password,
+    first_name: input.firstName,
+    last_name: input.lastName,
+    username: input.username || input.email.split("@")[0],
   });
 }
 

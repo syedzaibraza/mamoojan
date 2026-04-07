@@ -103,8 +103,14 @@ export async function POST(request: Request) {
         contentType: "application/x-www-form-urlencoded",
         payload: { email, user_email: email, username, user_login: username },
       },
-      { contentType: "application/x-www-form-urlencoded", payload: { login: username } },
-      { contentType: "application/x-www-form-urlencoded", payload: { user_login: username } },
+      {
+        contentType: "application/x-www-form-urlencoded",
+        payload: { login: username },
+      },
+      {
+        contentType: "application/x-www-form-urlencoded",
+        payload: { user_login: username },
+      },
       { contentType: "application/x-www-form-urlencoded", payload: { email } },
     ];
 

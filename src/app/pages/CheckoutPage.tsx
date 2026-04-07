@@ -20,6 +20,8 @@ type CheckoutForm = {
   state: string;
   postcode: string;
   country: string;
+  createAccount: boolean;
+  accountPassword: string;
   cardNumber: string;
   cardExpiry: string;
   cardCvv: string;
@@ -35,7 +37,9 @@ const initialForm: CheckoutForm = {
   city: "",
   state: "",
   postcode: "",
-  country: "",
+  country: "USA",
+  createAccount: false,
+  accountPassword: "",
   cardNumber: "",
   cardExpiry: "",
   cardCvv: "",
@@ -66,8 +70,11 @@ function validateShipping(form: CheckoutForm): Partial<Record<keyof CheckoutForm
   if (!form.phone.trim()) errors.phone = "Phone number is required.";
   if (!form.address1.trim()) errors.address1 = "Address is required.";
   if (!form.city.trim()) errors.city = "City is required.";
+  if (!form.state.trim()) errors.state = "State is required.";
   if (!form.postcode.trim()) errors.postcode = "ZIP/postal code is required.";
-  if (!form.country.trim()) errors.country = "Country is required.";
+  if (form.createAccount && form.accountPassword.trim().length < 8) {
+    errors.accountPassword = "Password must be at least 8 characters.";
+  }
   return errors;
 }
 
@@ -209,7 +216,7 @@ export function CheckoutPage() {
 
   const goToPayment = () => {
     const shippingErrors = validateShipping(form);
-    setFieldErrors((prev) => ({ ...prev, ...shippingErrors }));
+    setFieldErrors((prev) => ({ ...prev, ...shippingErrors, country: undefined }));
     setErrorMessage(null);
     if (Object.keys(shippingErrors).length > 0) return;
     setStep("payment");
@@ -371,7 +378,7 @@ export function CheckoutPage() {
 
     const shippingErrors = validateShipping(form);
     if (Object.keys(shippingErrors).length > 0) {
-      setFieldErrors((prev) => ({ ...prev, ...shippingErrors }));
+      setFieldErrors((prev) => ({ ...prev, ...shippingErrors, country: undefined }));
       setErrorMessage(null);
       setStep("shipping");
       return;
@@ -401,9 +408,9 @@ export function CheckoutPage() {
             address1: form.address1.trim(),
             address2: form.address2.trim() || undefined,
             city: form.city.trim(),
-            state: form.state.trim() || undefined,
+            state: form.state.trim(),
             postcode: form.postcode.trim(),
-            country: form.country.trim(),
+            country: "USA",
           },
           shipping: {
             firstName: form.firstName.trim(),
@@ -411,10 +418,12 @@ export function CheckoutPage() {
             address1: form.address1.trim(),
             address2: form.address2.trim() || undefined,
             city: form.city.trim(),
-            state: form.state.trim() || undefined,
+            state: form.state.trim(),
             postcode: form.postcode.trim(),
-            country: form.country.trim(),
+            country: "USA",
           },
+          createAccount: form.createAccount,
+          accountPassword: form.createAccount ? form.accountPassword : undefined,
           cart: {
             items: wcLineItems,
             shippingTotal: shipping,
@@ -499,6 +508,33 @@ export function CheckoutPage() {
                   {fieldErrors.email && <p className="mt-1.5 ml-1 text-xs text-red-600">{fieldErrors.email}</p>}
                 </div>
                 <div className="col-span-2">
+                  <label className="inline-flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={form.createAccount}
+                      onChange={(e) => {
+                        setForm((prev) => ({ ...prev, createAccount: e.target.checked }));
+                        setFieldErrors((prev) => ({ ...prev, accountPassword: undefined }));
+                      }}
+                      className="accent-primary"
+                    />
+                    Create an account with this order
+                  </label>
+                  {form.createAccount && (
+                    <div className="w-full mt-3">
+                      <label className="text-sm text-muted-foreground">Account Password *</label>
+                      <input
+                        value={form.accountPassword}
+                        onChange={handleFormChange("accountPassword")}
+                        type="password"
+                        className={`w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${fieldErrors.accountPassword ? "border-red-500" : ""}`}
+                        placeholder="At least 8 characters"
+                      />
+                      {fieldErrors.accountPassword && <p className="mt-1.5 ml-1 text-xs text-red-600">{fieldErrors.accountPassword}</p>}
+                    </div>
+                  )}
+                </div>
+                <div className="col-span-2">
                   <label className="text-sm text-muted-foreground">Phone *</label>
                   <input value={form.phone} onChange={handleFormChange("phone")} type="text" className={`w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${fieldErrors.phone ? "border-red-500" : ""}`} placeholder="+1 555 555 5555" />
                   {fieldErrors.phone && <p className="mt-1.5 ml-1 text-xs text-red-600">{fieldErrors.phone}</p>}
@@ -518,8 +554,9 @@ export function CheckoutPage() {
                   {fieldErrors.city && <p className="mt-1.5 ml-1 text-xs text-red-600">{fieldErrors.city}</p>}
                 </div>
                 <div>
-                  <label className="text-sm text-muted-foreground">State (optional)</label>
-                  <input value={form.state} onChange={handleFormChange("state")} type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="NY" />
+                  <label className="text-sm text-muted-foreground">State *</label>
+                  <input value={form.state} onChange={handleFormChange("state")} type="text" className={`w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${fieldErrors.state ? "border-red-500" : ""}`} placeholder="NY" />
+                  {fieldErrors.state && <p className="mt-1.5 ml-1 text-xs text-red-600">{fieldErrors.state}</p>}
                 </div>
                 <div>
                   <label className="text-sm text-muted-foreground">ZIP Code *</label>
@@ -528,9 +565,11 @@ export function CheckoutPage() {
                 </div>
                 <div>
                   <label className="text-sm text-muted-foreground">Country *</label>
-                  <input value={form.country} onChange={handleFormChange("country")} type="text" className={`w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${fieldErrors.country ? "border-red-500" : ""}`} placeholder="US" />
+                  <input value="USA" readOnly type="text" className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm bg-secondary/40" />
+                  <p className="mt-1.5 ml-1 text-xs text-muted-foreground">We currently deliver only within USA.</p>
                   {fieldErrors.country && <p className="mt-1.5 ml-1 text-xs text-red-600">{fieldErrors.country}</p>}
                 </div>
+
               </div>
               <button onClick={goToPayment} className="w-full mt-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}>
                 Continue to Payment
