@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, Suspense, useState } from "react";
 import { toast } from "sonner";
 
-export default function ForgotPasswordPage() {
+function ForgotPasswordContent() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/account";
 
@@ -86,5 +86,13 @@ export default function ForgotPasswordPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function ForgotPasswordPage() {
+  return (
+    <Suspense fallback={<div className="max-w-md mx-auto px-4 py-10 text-sm text-muted-foreground">Loading...</div>}>
+      <ForgotPasswordContent />
+    </Suspense>
   );
 }
