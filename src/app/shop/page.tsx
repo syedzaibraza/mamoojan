@@ -23,6 +23,7 @@ type WooProduct = {
   categories?: Array<{ id: number; name: string; slug: string }>;
   tags?: Array<{ id: number; name: string; slug: string }>;
   short_description?: string;
+  featured?: boolean;
 };
 
 export default async function ShopPage() {
@@ -33,8 +34,18 @@ export default async function ShopPage() {
   if (!wcUrlRaw || !wcKey || !wcSecret) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-10">
-        <h1 style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: "28px" }}>Shop</h1>
-        <p className="text-muted-foreground mt-3">WooCommerce credentials are missing on the server.</p>
+        <h1
+          style={{
+            fontFamily: "Poppins, sans-serif",
+            fontWeight: 700,
+            fontSize: "28px",
+          }}
+        >
+          Shop
+        </h1>
+        <p className="text-muted-foreground mt-3">
+          WooCommerce credentials are missing on the server.
+        </p>
       </div>
     );
   }
@@ -65,8 +76,18 @@ export default async function ShopPage() {
     } catch {
       return (
         <div className="max-w-7xl mx-auto px-4 py-10">
-          <h1 style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: "28px" }}>Shop</h1>
-          <p className="text-destructive mt-3">Failed to fetch products from WooCommerce (network error).</p>
+          <h1
+            style={{
+              fontFamily: "Poppins, sans-serif",
+              fontWeight: 700,
+              fontSize: "28px",
+            }}
+          >
+            Shop
+          </h1>
+          <p className="text-destructive mt-3">
+            Failed to fetch products from WooCommerce (network error).
+          </p>
         </div>
       );
     }
@@ -74,8 +95,18 @@ export default async function ShopPage() {
     if (!res.ok) {
       return (
         <div className="max-w-7xl mx-auto px-4 py-10">
-          <h1 style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: "28px" }}>Shop</h1>
-          <p className="text-destructive mt-3">Failed to fetch products from WooCommerce (HTTP {res.status}).</p>
+          <h1
+            style={{
+              fontFamily: "Poppins, sans-serif",
+              fontWeight: 700,
+              fontSize: "28px",
+            }}
+          >
+            Shop
+          </h1>
+          <p className="text-destructive mt-3">
+            Failed to fetch products from WooCommerce (HTTP {res.status}).
+          </p>
         </div>
       );
     }

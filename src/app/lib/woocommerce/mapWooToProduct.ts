@@ -22,10 +22,14 @@ type WooProduct = {
   categories?: WooCategory[];
   tags?: WooTag[];
   short_description?: string;
+  featured?: boolean;
 };
 
 function stripHtml(input: string) {
-  return input.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+  return input
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function toPriceNumber(value: string | undefined, fallback: number) {
@@ -49,8 +53,10 @@ export function mapWooToProduct(p: WooProduct): Product {
 
   const labelSet = new Set<string>();
   const tagBlob = tags.map((t) => t.name).join(" ");
-  if (p.on_sale || (p.sale_price != null && Number(p.sale_price) > 0)) labelSet.add("Sale");
-  if (/(best[-\\s_]?seller|bestseller)/i.test(tagBlob)) labelSet.add("Best Seller");
+  if (p.on_sale || (p.sale_price != null && Number(p.sale_price) > 0))
+    labelSet.add("Sale");
+  if (/(best[-\\s_]?seller|bestseller)/i.test(tagBlob))
+    labelSet.add("Best Seller");
   if (isNew) labelSet.add("New");
 
   const knownDietTypes = [
@@ -73,11 +79,15 @@ export function mapWooToProduct(p: WooProduct): Product {
   ];
   const dietTypes = tags
     .map((t) => t.name)
-    .filter((name) => knownDietTypes.some((d) => d.toLowerCase() === name.toLowerCase()))
+    .filter((name) =>
+      knownDietTypes.some((d) => d.toLowerCase() === name.toLowerCase()),
+    )
     .slice(0, 4);
 
   // Map WooCommerce tags onto the app's existing health goal slugs/names.
-  const knownHealthGoalNames = new Set(healthGoalDefs.map((g) => g.name.toLowerCase()));
+  const knownHealthGoalNames = new Set(
+    healthGoalDefs.map((g) => g.name.toLowerCase()),
+  );
   const healthGoalsFromTags = tags
     .map((t) => t.name)
     .filter((name) => knownHealthGoalNames.has(name.toLowerCase()))
@@ -86,16 +96,20 @@ export function mapWooToProduct(p: WooProduct): Product {
   const short = p.short_description ? stripHtml(p.short_description) : "";
 
   const price = toPriceNumber(p.price ?? p.regular_price, 0);
-  const regularPrice = p.regular_price ? toPriceNumber(p.regular_price, 0) : undefined;
+  const regularPrice = p.regular_price
+    ? toPriceNumber(p.regular_price, 0)
+    : undefined;
   const salePrice = p.sale_price ? toPriceNumber(p.sale_price, 0) : undefined;
 
   const inStock =
     p.stock_status === "instock" ||
     (typeof p.stock_quantity === "number" ? p.stock_quantity > 0 : false);
-  const stockCount = typeof p.stock_quantity === "number" ? p.stock_quantity : undefined;
+  const stockCount =
+    typeof p.stock_quantity === "number" ? p.stock_quantity : undefined;
 
   const rating = p.average_rating ? Number(p.average_rating) : 4.5;
   const reviewCount = p.rating_count ?? 0;
+  const featured = p.featured ?? false;
 
   return {
     id: String(p.id),
@@ -104,7 +118,9 @@ export function mapWooToProduct(p: WooProduct): Product {
     category: firstCategory,
     price,
     originalPrice:
-      regularPrice && salePrice && salePrice > 0 && regularPrice > salePrice ? regularPrice : undefined,
+      regularPrice && salePrice && salePrice > 0 && regularPrice > salePrice
+        ? regularPrice
+        : undefined,
     rating: Number.isFinite(rating) ? rating : 4.5,
     reviewCount: Number.isFinite(reviewCount) ? reviewCount : 0,
     image: p.images?.[0]?.src ?? "/Mamoojan-Logo.png",
@@ -113,6 +129,7 @@ export function mapWooToProduct(p: WooProduct): Product {
     dietTypes,
     description: short || p.name,
     short_description: short || p.name,
+    featured,
     benefits: short
       ? short
           .split(". ")
@@ -126,4 +143,3 @@ export function mapWooToProduct(p: WooProduct): Product {
     stockCount,
   };
 }
-

@@ -20,6 +20,7 @@ export interface Product {
   dosage: string;
   inStock: boolean;
   stockCount?: number;
+  featured?: boolean;
 
   // WooCommerce (optional) - used on product detail pages.
   attributes?: Array<{
