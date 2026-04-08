@@ -81,9 +81,9 @@ function ForgotPasswordContent() {
         <Link href={`/login?next=${encodeURIComponent(next)}`} className="text-primary hover:underline">
           Back to sign in
         </Link>
-        <Link href={`/reset-password?next=${encodeURIComponent(next)}`} className="text-primary hover:underline">
+        {/* <Link href={`/reset-password?next=${encodeURIComponent(next)}`} className="text-primary hover:underline">
           Have reset key?
-        </Link>
+        </Link> */}
       </div>
     </div>
   );

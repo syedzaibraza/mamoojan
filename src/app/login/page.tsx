@@ -88,9 +88,9 @@ function LoginPageContent() {
         <Link href={`/forgot-password?next=${encodeURIComponent(next)}`} className="text-primary hover:underline">
           Forgot password?
         </Link>
-        <Link href={`/register?next=${encodeURIComponent(next)}`} className="text-primary hover:underline">
+        {/* <Link href={`/register?next=${encodeURIComponent(next)}`} className="text-primary hover:underline">
           Create account
-        </Link>
+        </Link> */}
       </div>
     </div>
   );

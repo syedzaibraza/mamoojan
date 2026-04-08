@@ -10,9 +10,11 @@ function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/account";
 
-  const [email, setEmail] = useState(searchParams.get("email") || "");
   const [key, setKey] = useState(searchParams.get("key") || "");
+  const [id] = useState(searchParams.get("id") || "");
+  const [login] = useState(searchParams.get("login") || "");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -22,10 +24,17 @@ function ResetPasswordContent() {
     setMessage("");
 
     try {
+      if (password !== confirmPassword) {
+        throw new Error("Passwords do not match.");
+      }
+      if (!key || (!id && !login)) {
+        throw new Error("Invalid reset link. Please request a new password reset email.");
+      }
+
       const res = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, key, password }),
+        body: JSON.stringify({ key, id, login, password }),
       });
       const data = (await res.json()) as { ok?: boolean; message?: string };
       if (!res.ok || !data.ok) {
@@ -48,30 +57,10 @@ function ResetPasswordContent() {
         Reset password
       </h1>
       <p className="text-sm text-muted-foreground mb-6">
-        Enter the reset key from your email and choose a new password.
+        Choose your new password.
       </p>
 
       <form onSubmit={handleSubmit} className="bg-white border border-border rounded-xl p-5 space-y-4">
-        <div>
-          <label className="text-sm text-muted-foreground">Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm"
-          />
-        </div>
-        <div>
-          <label className="text-sm text-muted-foreground">Reset key</label>
-          <input
-            type="text"
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
-            required
-            className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm"
-          />
-        </div>
         <div>
           <label className="text-sm text-muted-foreground">New password</label>
           <input
@@ -82,6 +71,18 @@ function ResetPasswordContent() {
             required
             className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm"
             placeholder="At least 8 characters"
+          />
+        </div>
+        <div>
+          <label className="text-sm text-muted-foreground">Confirm new password</label>
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            minLength={8}
+            required
+            className="w-full mt-1 px-3 py-2.5 border border-border rounded-lg text-sm"
+            placeholder="Repeat password"
           />
         </div>
         {message && <p className="text-sm text-red-600">{message}</p>}

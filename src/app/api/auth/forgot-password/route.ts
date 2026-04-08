@@ -86,7 +86,7 @@ export async function POST(request: Request) {
 
     const endpoint =
       process.env.WP_FORGOT_PASSWORD_ENDPOINT ||
-      "/wp-json/bdpwr/v1/reset-password";
+      "/wp-json/custom/v1/customer-reset-password";
     const username = (await getWpUsernameByEmail(email)) || email;
     const attempts: Array<{
       payload: Record<string, string>;
