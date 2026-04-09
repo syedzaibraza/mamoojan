@@ -24,15 +24,14 @@ Email
 mamoojanus@gmail.com
 
 Primary Address
-522 Mulberry Lane
-West Hempstead, NY 11552
+West Hempstead, NY, 11552
 United States
 
 Warehouse Address
 441 Schiller St
 Elizabeth, New Jersey 07206
 
-2. Color Scheme (Observed From Website Style)
+1. Color Scheme (Observed From Website Style)
 
 The website uses a clean minimal palette.
 
@@ -57,21 +56,21 @@ Product focused
 Neutral backgrounds for product display
 
 3. Product Listings (Examples from the site)
-Focus N Rulz Herbal Supplements
+   Focus N Rulz Herbal Supplements
 
 (Distributed in the USA through MamooJan)
 
 1. Shilajit Shot
-Category: Herbal supplement
-Description: Liquid shilajit energy supplement.
+   Category: Herbal supplement
+   Description: Liquid shilajit energy supplement.
 
 2. Shilajit Gummies
-Category: Herbal supplement
-Description: Daily wellness gummies made with shilajit.
+   Category: Herbal supplement
+   Description: Daily wellness gummies made with shilajit.
 
 3. Shilajit Resin
-Category: Herbal supplement
-Description: Traditional Himalayan shilajit resin supplement.
+   Category: Herbal supplement
+   Description: Traditional Himalayan shilajit resin supplement.
 
 MamooJan Products
 

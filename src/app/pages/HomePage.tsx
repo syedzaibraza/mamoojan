@@ -159,7 +159,7 @@ export function HomePage() {
           autoplay={{ delay: 4500, disableOnInteraction: false }}
           pagination={{ clickable: true }}
           loop
-          className="[&_.swiper-pagination]:!bottom-3 [&_.swiper-pagination-bullet-active]:!bg-white [&_.swiper-pagination-bullet]:!bg-white/50"
+          className="[&_.swiper-pagination]:!bottom-3 [&_.swiper-pagination-bullet-active]:!bg-white [&_.swiper-pagination-bullet]:!bg-white/100"
         >
           {heroSlides.map((slide) => (
             <SwiperSlide key={slide.title}>
@@ -609,7 +609,7 @@ export function HomePage() {
       </section>
 
       {/* Section 8: Rewards Program */}
-      <section className="py-12 md:py-16 bg-primary text-white">
+      {/* <section className="py-12 md:py-16 bg-primary text-white">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
@@ -679,7 +679,7 @@ export function HomePage() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Section 9: Newsletter Signup */}
       <section className="py-12 md:py-16 bg-white">

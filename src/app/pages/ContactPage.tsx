@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, Mail, Phone, MapPin, Clock, MessageCircle, Warehouse } from "lucide-react";
+import { ChevronRight, ChevronDown, Mail, Phone, MapPin, Clock, MessageCircle, Warehouse } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -31,10 +31,10 @@ export function ContactPage() {
         {/* Contact Info */}
         <div className="space-y-4">
           {[
-            { icon: <Mail className="w-5 h-5" />, title: "Email", detail: "mamoojanus@gmail.com", sub: "We respond within 24 hours" },
-            { icon: <Phone className="w-5 h-5" />, title: "Phone", detail: "+1 (212) 321-0291", sub: "Mon-Fri 9am-6pm EST" },
-            { icon: <MapPin className="w-5 h-5" />, title: "Office Address", detail: "522 Mulberry Lane", sub: "West Hempstead, NY 11552" },
-            { icon: <Warehouse className="w-5 h-5" />, title: "Warehouse", detail: "441 Schiller St", sub: "Elizabeth, NJ 07206" },
+            { icon: <Mail className="w-5 h-5" />, title: "Email", detail: "mamoojanus@gmail.com" },
+            { icon: <Phone className="w-5 h-5" />, title: "Phone", detail: "+1 (212) 321-0291" },
+            { icon: <MapPin className="w-5 h-5" />, title: "Office Address", detail: "West Hempstead, NY, 11552", sub: "United States" },
+            // { icon: <Warehouse className="w-5 h-5" />, title: "Warehouse", detail: "441 Schiller St", sub: "Elizabeth, NJ 07206" },
           ].map((item) => (
             <div key={item.title} className="flex items-start gap-4 p-4 bg-white rounded-xl border border-border">
               <div className="w-10 h-10 rounded-full bg-primary/5 text-primary flex items-center justify-center shrink-0">{item.icon}</div>
@@ -114,18 +114,46 @@ export function ContactPage() {
       </div>
 
       {/* FAQ */}
-      <div className="bg-secondary rounded-xl p-6 md:p-8 mb-12">
-        <h2 className="text-center mb-6" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600, fontSize: "20px" }}>Frequently Asked Questions</h2>
-        <div className="grid md:grid-cols-2 gap-4 max-w-4xl mx-auto">
+      <div className="bg-gradient-to-b from-secondary to-secondary/60 rounded-2xl border border-border p-6 md:p-8 mb-12">
+        <h2 className="text-center mb-2" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: "24px" }}>Frequently Asked Questions</h2>
+        <p className="text-center text-sm text-muted-foreground mb-6">
+          Everything you need to know about Mamoojan products.
+        </p>
+        <div className="max-w-3xl mx-auto space-y-3">
           {[
-            { q: "What is your return policy?", a: "We offer a 30-day return policy on all unopened products. If you're not satisfied, contact us for a full refund." },
-            { q: "How long does shipping take?", a: "Orders ship from our New Jersey warehouse within 1-2 business days. Standard delivery takes 3-5 business days across the US." },
-            { q: "Do you ship internationally?", a: "Currently we ship within the United States. International shipping options are coming soon." },
-            { q: "Do you offer wholesale pricing?", a: "Yes! We offer wholesale and distribution partnerships. Contact us at mamoojanus@gmail.com for wholesale inquiries." },
+            {
+              q: "What is Shilajit?",
+              a: "Shilajit is a natural mineral-rich resin found in the Himalayan mountains, known for its energy-boosting and revitalizing properties.",
+            },
+            {
+              q: "How should I use Mamoojan products?",
+              a: "Each product comes with simple usage directions on the packaging. Follow the recommended amount for best results.",
+            },
+            {
+              q: "Are Mamoojan products natural?",
+              a: "Yes. All Mamoojan products are made using pure and authentic ingredients sourced from nature.",
+            },
+            {
+              q: "Can I use multiple Mamoojan products together?",
+              a: "Yes, our products complement each other well and can be used together as part of your daily wellness routine.",
+            },
+            {
+              q: "What makes Mamoojan different from others?",
+              a: "Mamoojan focuses on authenticity, quality, and customer satisfaction — ensuring every product delivers real results.",
+            },
           ].map((faq) => (
-            <details key={faq.q} className="bg-white rounded-lg border border-border">
-              <summary className="p-4 cursor-pointer text-sm list-none" style={{ fontWeight: 500 }}>{faq.q}</summary>
-              <p className="px-4 pb-4 text-sm text-muted-foreground">{faq.a}</p>
+            <details
+              key={faq.q}
+              className="group bg-white rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow"
+            >
+              <summary
+                className="flex items-center justify-between gap-3 p-4 md:p-5 cursor-pointer list-none"
+                style={{ fontWeight: 600 }}
+              >
+                <span className="text-sm md:text-base">{faq.q}</span>
+                <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
+              </summary>
+              <p className="px-4 md:px-5 pb-5 text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
             </details>
           ))}
         </div>
