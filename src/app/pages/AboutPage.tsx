@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, Globe, Award, Heart, Users, Leaf, Package } from "lucide-react";
+import { ChevronRight, Award, Zap, ShieldCheck, HeartPulse, Activity } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 
 export function AboutPage() {
@@ -15,31 +15,20 @@ export function AboutPage() {
           </nav>
           <div className="max-w-3xl">
             <h1 style={{ fontFamily: "Poppins, sans-serif", fontWeight: 800, fontSize: "clamp(28px, 5vw, 42px)" }}>
-              Connecting <span className="text-accent">Families</span> Around The World
+              About <span className="text-accent">MamooJan</span>
             </h1>
             <p className="text-muted-foreground mt-6 text-lg">
-              Founded on July 25, 2017, MamooJan is dedicated to bringing traditional products, wellness supplements, authentic snacks, and everyday essentials to customers through our online store and retail distribution. We bridge cultures and connect families through familiar flavors and natural wellness.
+              At Mamoojan, we believe in harnessing the natural power of the Himalayas to promote wellness, energy, and vitality.
             </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Values */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-center mb-10" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: "28px" }}>What Drives Us</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { icon: <Heart className="w-8 h-8" />, title: "Family & Culture", desc: "We connect families and communities through familiar products that bring the tastes and traditions of home to your doorstep." },
-              { icon: <Leaf className="w-8 h-8" />, title: "Traditional Wellness", desc: "We offer natural herbal supplements like Shilajit and Joshanda, honoring centuries-old traditions of holistic health and wellness." },
-              { icon: <Globe className="w-8 h-8" />, title: "Global Connection", desc: "We bridge cultures by making South Asian heritage foods, snacks, and traditional products accessible worldwide." },
-            ].map((v) => (
-              <div key={v.title} className="text-center">
-                <div className="w-16 h-16 mx-auto rounded-full bg-primary/5 text-primary flex items-center justify-center mb-4">{v.icon}</div>
-                <h3 style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600, fontSize: "18px" }}>{v.title}</h3>
-                <p className="text-muted-foreground mt-2 text-sm">{v.desc}</p>
-              </div>
-            ))}
+            <p className="text-muted-foreground mt-4 text-lg">
+              As the sole distributor of Belle Vie in the United States, Canada, and Mexico, we are committed to bringing authentic Himalayan Shilajit and other natural products to customers who value purity and performance.
+            </p>
+            <p className="text-muted-foreground mt-4 text-lg">
+              Our mission is simple: to provide products that are 100% authentic, naturally sourced, and crafted with care. Every item we offer undergoes strict quality checks to ensure it meets our high standards for excellence and customer satisfaction.
+            </p>
+            <p className="text-muted-foreground mt-4 text-lg">
+              Mamoojan represents more than just a product line; it is a commitment to natural living and lasting energy. Through our growing range of health-boosting supplements and wellness essentials, we strive to help individuals enhance their daily vitality and live more balanced lives.
+            </p>
           </div>
         </div>
       </section>
@@ -47,16 +36,15 @@ export function AboutPage() {
       {/* Stats */}
       <section className="py-16 bg-primary text-white">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
             {[
-              { value: "2017", label: "Founded" },
-              { value: "140+", label: "Products" },
-              { value: "100%", label: "Quality Focus" },
-              { value: "4.7/5", label: "Average Rating" },
-            ].map((s) => (
-              <div key={s.label}>
-                <p style={{ fontFamily: "Poppins, sans-serif", fontWeight: 800, fontSize: "36px" }}>{s.value}</p>
-                <p className="text-sm opacity-80 mt-1">{s.label}</p>
+              { value: "100%", label: "Authenticity" },
+              { value: "100%", label: "Quality" },
+              { value: "100%", label: "Customer Service" },
+            ].map((item) => (
+              <div key={item.label}>
+                <p style={{ fontFamily: "Poppins, sans-serif", fontWeight: 800, fontSize: "42px" }}>{item.value}</p>
+                <p className="text-sm opacity-90 mt-1">{item.label}</p>
               </div>
             ))}
           </div>
@@ -75,13 +63,45 @@ export function AboutPage() {
               />
             </div>
             <div>
-              <h2 style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: "28px" }}>Our Story</h2>
-              <p className="text-muted-foreground mt-4">
-                MamooJan started with a simple idea: families living abroad deserve easy access to the traditional products, snacks, and wellness items they grew up with. What began as a small effort to share beloved products has grown into a trusted online retail and distribution company.
-              </p>
-              <p className="text-muted-foreground mt-4">
-                Based in West Hempstead, New York, with our warehouse in Elizabeth, New Jersey, we serve customers across the United States. From authentic Himalayan Shilajit supplements distributed through our Focus N Rulz brand to favorite childhood mango snacks, every product is selected with care to bring joy and connection to your home.
-              </p>
+              <h2 style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: "28px" }}>
+                Increase Energy With MamooJan
+              </h2>
+              <div className="mt-6 space-y-4">
+                {[
+                  {
+                    icon: <Zap className="w-5 h-5" />,
+                    title: "Natural Energy",
+                    desc: "Experience sustained energy the natural way.",
+                  },
+                  {
+                    icon: <ShieldCheck className="w-5 h-5" />,
+                    title: "Immune Support",
+                    desc: "Our products help strengthen your immune system.",
+                  },
+                  {
+                    icon: <HeartPulse className="w-5 h-5" />,
+                    title: "Boost Your Immunity",
+                    desc: "Regular use of our supplements promotes resilience against stress.",
+                  },
+                  {
+                    icon: <Activity className="w-5 h-5" />,
+                    title: "Natural Vitality",
+                    desc: "Restore your body’s natural vitality and performance.",
+                  },
+                ].map((item) => (
+                  <div key={item.title} className="flex gap-3">
+                    <div className="mt-0.5 w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                      {item.icon}
+                    </div>
+                    <div>
+                      <h3 style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600, fontSize: "16px" }}>
+                        {item.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mt-1">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
               <div className="flex items-center gap-4 mt-6">
                 <Link href="/contact" className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}>
                   Get in Touch
@@ -98,7 +118,7 @@ export function AboutPage() {
         <div className="max-w-7xl mx-auto px-4 text-center">
           <h2 className="mb-8" style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: "28px" }}>Our Quality Standards</h2>
           <div className="flex flex-wrap justify-center gap-6">
-            {["MamooJan", "Focus N Rulz", "Family Owned", "Made with Care", "USA Distribution", "Authentic Products"].map((item) => (
+            {["MamooJan", "Belle Vie Distributor", "Natural Sourcing", "Made with Care", "North America Distribution", "Authentic Products"].map((item) => (
               <div key={item} className="flex items-center gap-2 px-4 py-3 bg-white rounded-lg border border-border">
                 <Award className="w-5 h-5 text-primary" />
                 <span className="text-sm">{item}</span>

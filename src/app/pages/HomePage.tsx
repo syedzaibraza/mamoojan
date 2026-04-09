@@ -23,6 +23,11 @@ import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useState } from "react";
 import { useWooCategories } from "../hooks/useWooCategories";
 import { useWooProducts } from "../hooks/useWooProducts";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay, Pagination } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/pagination";
+import { Button } from "../components/ui/button";
 
 const themeIcons: Record<string, React.ReactNode> = {
   "Traditional Wellness": <Leaf className="w-6 h-6" />,
@@ -60,6 +65,72 @@ const themes = [
   },
 ];
 
+const heroSlides = [
+  {
+    id: 1,
+    badge: "Est. 2017 — Trusted by Families Everywhere",
+    title: "Connecting Families Around The World",
+    highlightOne: "Families",
+    highlightTwo: "World",
+    description:
+      "Traditional products, herbal supplements, authentic snacks, and everyday essentials — bringing the flavors and traditions of home to your doorstep.",
+    ctaLabel: "Shop Now",
+    ctaHref: "/shop",
+    image:
+      "/all-products.png",
+    imageAlt: "Connecting families with traditional products",
+    backgroundClass:
+      "bg-gradient-to-br from-stone-50 via-white to-gray-50",
+    backgroundImage:
+      "url('/banner.png')",
+    panelClass: "bg-white",
+    ratingText: "4.7/5 Average Rating",
+    ratingSubtext: "Loved by families since 2017",
+  },
+  {
+    id: 2,
+    badge: "Premium Wellness Picks",
+    title: "Natural Wellness For Everyday Life",
+    highlightOne: "Wellness",
+    highlightTwo: "Everyday Life",
+    description:
+      "From pure shilajit to daily essentials, discover carefully selected products that support energy, balance, and wellbeing for your entire family.",
+    ctaLabel: "Explore Wellness",
+    ctaHref: "/category/herbal-supplements",
+    image:
+      "/salajit-image.png",
+    imageAlt: "Natural wellness products display",
+    backgroundImage:
+      "url('/banner-1.png')",
+    backgroundClass:
+      "bg-gradient-to-br from-emerald-50 via-white to-lime-50",
+    panelClass: "bg-emerald-50/90",
+    ratingText: "Top Rated Wellness",
+    ratingSubtext: "Clean ingredients and trusted quality",
+  },
+  {
+    id: 3,
+    badge: "Fast USA Delivery",
+    title: "Authentic Taste Delivered To Your Door",
+    highlightOne: "Authentic",
+    highlightTwo: "Delivered",
+    description:
+      "Stock your pantry with beloved snacks, spices, and cultural favorites shipped quickly from our USA warehouse with secure checkout.",
+    ctaLabel: "Browse Snacks",
+    ctaHref: "/category/snacks-food",
+    image:
+      "/mango-image.png",
+    imageAlt: "Authentic pantry and snack products",
+    backgroundImage:
+      "url('/banner-2.png')",
+    backgroundClass:
+      "bg-gradient-to-br from-amber-50 via-white to-orange-50",
+    panelClass: "bg-amber-50/90",
+    ratingText: "Fast Shipping Across USA",
+    ratingSubtext: "Packed with care, delivered quickly",
+  },
+];
+
 // const categoryImages = [
 //   { name: "Herbal Supplements", slug: "herbal-supplements", image: "https://images.unsplash.com/photo-1704597435621-ff7026f124fa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYXR1cmFsJTIwaGVyYmFsJTIwcHJvZHVjdHMlMjBkaXNwbGF5JTIwbWluaW1hbHxlbnwxfHx8fDE3NzMwODc0OTZ8MA&ixlib=rb-4.1.0&q=80&w=1080" },
 //   { name: "Snacks & Food", slug: "snacks-food", image: "https://images.unsplash.com/photo-1770124129809-fe1fe6b7c23e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkcmllZCUyMG1hbmdvJTIwZnJ1aXQlMjBzbmFja3N8ZW58MXx8fHwxNzczMDg3NDg4fDA&ixlib=rb-4.1.0&q=80&w=1080" },
@@ -82,87 +153,114 @@ export function HomePage() {
   return (
     <div>
       {/* Section 1: Hero Banner */}
-      <section className="relative bg-gradient-to-br from-stone-50 via-white to-gray-50 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 py-12 md:py-20 lg:py-24">
-          <div className="grid lg:grid-cols-2 gap-8 items-center">
-            <div>
-              <span className="inline-block px-3 py-1 bg-primary/5 text-primary rounded-full text-sm mb-4">
-                Est. 2017 &mdash; Trusted by Families Everywhere
-              </span>
-              <h1
-                className="mb-6"
-                style={{
-                  fontFamily: "Poppins, sans-serif",
-                  fontWeight: 800,
-                  fontSize: "clamp(28px, 5vw, 48px)",
-                  lineHeight: 1.2,
-                }}
+      <section className="relative overflow-hidden">
+        <Swiper
+          modules={[Autoplay, Pagination]}
+          autoplay={{ delay: 4500, disableOnInteraction: false }}
+          pagination={{ clickable: true }}
+          loop
+          className="[&_.swiper-pagination]:!bottom-3 [&_.swiper-pagination-bullet-active]:!bg-white [&_.swiper-pagination-bullet]:!bg-white/50"
+        >
+          {heroSlides.map((slide) => (
+            <SwiperSlide key={slide.title}>
+              <div
+                className={`relative ${slide.backgroundClass} bg-cover  bg-no-repeat ${slide.id === 1 ? "bg-bottom" : "bg-center"}`}
+                style={slide.backgroundImage ? { backgroundImage: slide.backgroundImage } : undefined}
               >
-                Connecting <span className="text-accent">Families</span> Around
-                The <span className="text-accent">World</span>
-              </h1>
-              <p
-                className="text-muted-foreground mb-8 max-w-lg"
-                style={{ fontSize: "18px" }}
-              >
-                Traditional products, herbal supplements, authentic snacks, and
-                everyday essentials — bringing the flavors and traditions of
-                home to your doorstep.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  href="/shop"
-                  className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
-                  style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}
-                >
-                  Shop Now <ArrowRight className="w-4 h-4" />
-                </Link>
-                {/* <Link
-                  href="/category/snacks-food"
-                  className="px-6 py-3 bg-white border-2 border-primary text-primary rounded-lg hover:bg-primary/5 transition-colors"
-                  style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600 }}
-                >
-                  Explore Products
-                </Link> */}
-              </div>
-              <div className="flex items-center gap-6 mt-8 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <CheckCircle className="w-4 h-4 text-primary" /> Authentic
-                  Products
-                </span>
-                <span className="flex items-center gap-1">
-                  <CheckCircle className="w-4 h-4 text-primary" /> Fast Shipping
-                </span>
-                <span className="flex items-center gap-1">
-                  <CheckCircle className="w-4 h-4 text-primary" /> Family Owned
-                </span>
-              </div>
-            </div>
-            <div className="relative hidden lg:block">
-              <ImageWithFallback
-                src="https://images.unsplash.com/photo-1710186012216-9b2cf2a800bf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzb3V0aCUyMGFzaWFuJTIwZmFtaWx5JTIwZ2F0aGVyaW5nJTIwZm9vZHxlbnwxfHx8fDE3NzMwODc0OTV8MA&ixlib=rb-4.1.0&q=80&w=1080"
-                alt="Connecting families with traditional products"
-                className="rounded-2xl shadow-2xl w-full aspect-[4/3] object-cover"
-              />
-              <div className="absolute -bottom-4 -left-4 bg-white p-4 rounded-xl shadow-lg">
-                <div className="flex items-center gap-2">
-                  <div className="flex">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className="w-4 h-4 fill-yellow-400 text-yellow-400"
+                <div className="max-w-7xl mx-auto px-4 py-12 md:py-20 lg:py-24">
+                  <div className="grid lg:grid-cols-2 gap-8 items-center">
+                    <div>
+                      <span className={`${slide.id === 2 || slide.id === 1 ? "bg-white/10 text-white" : "bg-primary/10 text-primary"} inline-block px-3 py-1 rounded-full text-sm mb-4`}>
+                        {slide.badge}
+                      </span>
+                      <h1
+                        className={`${slide.id === 2 || slide.id === 1 ? "text-white" : "text-primary"} mb-6 `}
+                        style={{
+                          fontFamily: "Poppins, sans-serif",
+                          fontWeight: 800,
+                          fontSize: "clamp(28px, 5vw, 48px)",
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {slide.title.split(slide.highlightOne)[0]}
+                        <span className={`${slide.id === 3 ? "text-white" : "text-accent"}`}>{slide.highlightOne}</span>
+                        {slide.title
+                          .split(slide.highlightOne)[1]
+                          ?.split(slide.highlightTwo)[0]}
+                        <span className={`${slide.id === 3 ? "text-white" : "text-accent"}`}>{slide.highlightTwo}</span>
+                        {slide.title.split(slide.highlightTwo)[1]}
+                      </h1>
+                      <p
+                        className={`${slide.id === 2 || slide.id === 1 ? "text-white" : "text-primary"} mb-8 max-w-lg`}
+                        style={{ fontSize: "18px" }}
+                      >
+                        {slide.description}
+                      </p>
+                      <div className="flex flex-wrap gap-3">
+                        {/* <Link
+                          href={slide.ctaHref}
+                          className={`${slide.id === 2 ? "bg-white text-primary" : "bg-primary text-white"} px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2`}
+                          style={{
+                            fontFamily: "Poppins, sans-serif",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {slide.ctaLabel} <ArrowRight className="w-4 h-4" />
+                        </Link> */}
+                        <Button
+                          size='xl'
+                          variant={slide.id === 2 || slide.id === 1 ? "outline" : "default"}
+                          className={`${slide.id === 2 || slide.id === 1 ? "bg-white text-primary hover:bg-white/90 hover:text-primary" : "bg-primary text-white hover:bg-primary/90 hover:text-white"} px-6 py-3 rounded-lg transition-colors flex items-center gap-2 cursor-pointer`}
+                        >
+                          {slide.ctaLabel} <ArrowRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <div className={`flex items-center gap-6 mt-8 text-sm ${slide.id === 2 || slide.id === 1 ? "text-white" : "text-primary"}`}>
+                        <span className="flex items-center gap-1">
+                          <CheckCircle className="w-4 h-4 " />{" "}
+                          Authentic Products
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <CheckCircle className="w-4 h-4 " /> Fast
+                          Shipping
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <CheckCircle className="w-4 h-4 " /> Family
+                          Owned
+                        </span>
+                      </div>
+                    </div>
+                    <div className="relative hidden lg:block">
+                      <ImageWithFallback
+                        src={slide.image}
+                        alt={slide.imageAlt}
+                        className={`w-full   ${slide.id === 1 ? "object-cover object-bottom " : "h-[396.19px] object-contain"}`}
                       />
-                    ))}
+                      <div
+                        className={`absolute -bottom-4 -left-4 p-4 rounded-xl shadow-lg ${slide.panelClass}`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="flex">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className="w-4 h-4 fill-yellow-400 text-yellow-400"
+                              />
+                            ))}
+                          </div>
+                          <span className="text-sm">{slide.ratingText}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {slide.ratingSubtext}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-sm">4.7/5 Average Rating</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Loved by families since 2017
-                </p>
               </div>
-            </div>
-          </div>
-        </div>
+            </SwiperSlide>
+          ))}
+        </Swiper>
       </section>
 
       {/* Section 2: Shop by Theme */}
