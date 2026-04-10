@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const wcUrl = process.env.WC_URL;
   const wcKey = process.env.WC_KEY;
@@ -15,7 +15,7 @@ export async function GET(
     );
   }
 
-  const orderId = params.id;
+  const { id: orderId } = await params;
   const url = `${wcUrl}/wp-json/wc/v3/orders/${orderId}?consumer_key=${wcKey}&consumer_secret=${wcSecret}`;
 
   try {

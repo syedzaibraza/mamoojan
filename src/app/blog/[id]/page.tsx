@@ -20,10 +20,13 @@ export async function generateStaticParams() {
   }));
 }
 
-export default function BlogDetailPage({ params }: { params: { id: string } }) {
-  const post = blogPosts.find((p) => p.id === params.id) as
-    | BlogPost
-    | undefined;
+export default async function BlogDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const post = blogPosts.find((p) => p.id === id) as BlogPost | undefined;
 
   if (!post) {
     notFound();
