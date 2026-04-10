@@ -439,10 +439,22 @@ export const blogPosts = [
     excerpt:
       "Discover the centuries-old Himalayan resin known as Shilajit — its origins, traditional uses, and why it's becoming a modern wellness staple.",
     category: "Wellness Guides",
-    image:
-      "https://images.unsplash.com/photo-1704597435621-ff7026f124fa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYXR1cmFsJTIwaGVyYmFsJTIwcHJvZHVjdHMlMjBkaXNwbGF5JTIwbWluaW1hbHxlbnwxfHx8fDE3NzMwODc0OTZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+    image: "/blog/salajit-image.png",
     date: "March 5, 2026",
     readTime: "8 min read",
+    content: `
+      <h2>Origins of Shilajit</h2>
+      <p>Shilajit, often called "the destroyer of weakness," is a sticky, tar-like substance found in the Himalayan mountains. Formed over centuries from the decomposition of plant and microbial matter under intense pressure, this natural resin has been used in Ayurvedic medicine for thousands of years.</p>
+      
+      <h2>Traditional Uses</h2>
+      <p>In traditional South Asian medicine, Shilajit was prized for its rejuvenating properties. Ancient texts describe it as a rasayana - a substance that promotes longevity and vitality. It was commonly used to enhance physical strength, mental clarity, and overall wellness.</p>
+      
+      <h2>Modern Research</h2>
+      <p>Contemporary studies have identified over 84 minerals and fulvic acid as key components. Research suggests Shilajit may support cognitive function, energy levels, and immune health. Its antioxidant properties help combat oxidative stress in the body.</p>
+      
+      <h2>How to Use Shilajit</h2>
+      <p>The resin form is traditionally dissolved in warm water or milk. Start with a small amount (pea-sized) and gradually increase as your body adjusts. Always consult with a healthcare provider before starting any new supplement regimen.</p>
+    `,
   },
   {
     id: "2",
@@ -450,10 +462,22 @@ export const blogPosts = [
     excerpt:
       "How sharing familiar snacks and treats from South Asian heritage helps bridge cultural gaps and keep family traditions alive.",
     category: "Culture & Family",
-    image:
-      "https://images.unsplash.com/photo-1710186012216-9b2cf2a800bf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzb3V0aCUyMGFzaWFuJTIwZmFtaWx5JTIwZ2F0aGVyaW5nJTIwZm9vZHxlbnwxfHx8fDE3NzMwODc0OTV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+    image: "/blog/food-snacks.png",
     date: "February 28, 2026",
     readTime: "6 min read",
+    content: `
+      <h2>The Power of Familiar Flavors</h2>
+      <p>Food has an incredible ability to evoke memories and create connections. For families living away from their cultural homeland, traditional snacks serve as a bridge to heritage and shared experiences.</p>
+      
+      <h2>Preserving Traditions</h2>
+      <p>From mango bites to digestive candies, these treats carry stories of our ancestors. Sharing them with younger generations ensures that cultural knowledge and family recipes are passed down through time.</p>
+      
+      <h2>Building Community</h2>
+      <p>Traditional foods bring people together. Whether it's a family gathering or a cultural celebration, these familiar snacks create moments of joy and connection that transcend geographical boundaries.</p>
+      
+      <h2>Health Benefits</h2>
+      <p>Many traditional snacks are made with natural ingredients and herbs that support digestion and overall wellness. They represent a holistic approach to both nutrition and cultural preservation.</p>
+    `,
   },
   {
     id: "3",
@@ -461,10 +485,98 @@ export const blogPosts = [
     excerpt:
       "Learn about Joshanda, the traditional herbal tea mix that has been a household staple for generations, and its soothing wellness benefits.",
     category: "Traditional Remedies",
-    image:
-      "https://images.unsplash.com/photo-1577016029703-cc22a7c0c28c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoZXJiYWwlMjB0ZWElMjBiYWdzJTIwdHJhZGl0aW9uYWwlMjByZW1lZHl8ZW58MXx8fHwxNzczMDg3NDk1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+    image: "/blog/joshanda.png",
     date: "February 20, 2026",
     readTime: "5 min read",
+    content: `
+      <h2>What is Joshanda?</h2>
+      <p>Joshanda is a traditional herbal tea blend that has been used in South Asian households for generations. This warming remedy combines several herbs and spices to create a soothing drink that supports respiratory and immune health.</p>
+      
+      <h2>Key Ingredients</h2>
+      <p>The blend typically includes liquorice root, ginger, black pepper, fennel seeds, and other herbs. Each ingredient contributes specific benefits - from soothing sore throats to supporting digestion.</p>
+      
+      <h2>Traditional Uses</h2>
+      <p>Joshanda was commonly prepared during cold weather or when someone in the family was feeling under the weather. It was believed to help clear congestion, reduce fever, and strengthen the body's natural defenses.</p>
+      
+      <h2>Modern Applications</h2>
+      <p>Today, Joshanda continues to be valued for its natural approach to wellness. Many people incorporate it into their routine during seasonal changes or when they need extra immune support.</p>
+    `,
+  },
+  {
+    id: "4",
+    title: "5 Traditional Snacks That Connect You to Your Roots",
+    excerpt:
+      "From Mango Bites to Hazmina digestive candy, explore traditional snacks that bring the flavors of South Asian heritage to your everyday life.",
+    category: "Culture & Family",
+    image: "/blog/chaunsa-bites.png",
+    date: "February 15, 2026",
+    readTime: "5 min read",
+    content: `
+      <h2>The Sweet Taste of Home</h2>
+      <p>Mango Bites, also known as Chaunsa Bites, are a beloved traditional snack that captures the essence of South Asian summers. These dried mango slices, often coated in spices, bring back memories of family gatherings and festive celebrations.</p>
+      
+      <h2>Hazmina: The Digestive Hero</h2>
+      <p>Hazmina digestive candy has been a household staple for generations. Made with natural ingredients like fennel seeds and herbs, these candies not only satisfy sweet cravings but also support healthy digestion.</p>
+      
+      <h2>More Than Just Snacks</h2>
+      <p>These traditional treats carry cultural significance, connecting us to our roots and preserving family traditions. Each bite tells a story of heritage and shared experiences across generations.</p>
+      
+      <h2>Health Benefits</h2>
+      <p>Many traditional snacks are crafted with natural ingredients that provide nutritional benefits alongside their delicious flavors. They represent a holistic approach to both enjoyment and wellness.</p>
+    `,
+  },
+  {
+    id: "5",
+    title: "Tongue Scraping: The Ancient Practice for Better Oral Health",
+    excerpt:
+      "Discover why tongue scraping has been a daily ritual in Ayurvedic tradition for thousands of years and how it benefits your overall health.",
+    category: "Lifestyle Tips",
+    image: "/blog/tongue-scrapper.png",
+    date: "February 10, 2026",
+    readTime: "4 min read",
+    content: `
+      <h2>Ancient Wisdom for Modern Health</h2>
+      <p>Tongue scraping, or jihwa prakshalana, is an ancient Ayurvedic practice that has been part of daily hygiene routines for thousands of years. This simple ritual involves gently scraping the tongue to remove accumulated toxins and bacteria.</p>
+      
+      <h2>The Science Behind It</h2>
+      <p>The tongue harbors millions of bacteria, and morning tongue scraping helps remove the overnight buildup. This practice not only freshens breath but also prevents the ingestion of harmful bacteria that can affect overall health.</p>
+      
+      <h2>Health Benefits</h2>
+      <p>Regular tongue scraping can improve taste perception, reduce bad breath, and support the body's natural detoxification processes. It's a gentle way to enhance oral hygiene and overall wellness.</p>
+      
+      <h2>How to Practice</h2>
+      <p>Use a copper or stainless steel tongue scraper. Gently scrape from back to front, rinse between strokes, and clean the scraper afterward. Make it part of your morning routine for best results.</p>
+    `,
+  },
+  {
+    id: "6",
+    title: "How to Celebrate Cultural Holidays When Living Abroad",
+    excerpt:
+      "Tips and ideas for keeping cultural traditions alive through decorations, greeting cards, and traditional foods, even far from home.",
+    category: "Culture & Family",
+    image:
+      "https://images.unsplash.com/photo-1763879537802-18dd4a76b3c5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb2xvcmZ1bCUyMHBhcnR5JTIwZmxhZ3MlMjBkZWNvcmF0aW9uJTIwYnVudGluZ3xlbnwxfHx8fDE3NzMwODc0OTF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+    date: "February 5, 2026",
+    readTime: "7 min read",
+    content: `
+      <h2>Preserving Cultural Identity</h2>
+      <p>Living abroad doesn't mean losing touch with cultural traditions. With creativity and planning, you can celebrate holidays in meaningful ways that keep family heritage alive for future generations.</p>
+      
+      <h2>Decorations and Ambiance</h2>
+      <p>Create festive atmospheres with traditional decorations. Colorful flags, lanterns, and cultural motifs can transform your space into a celebration of heritage, even in a foreign land.</p>
+      
+      <h2>Traditional Foods</h2>
+      <p>Food plays a central role in cultural celebrations. Seek out authentic ingredients or learn to prepare traditional dishes. Sharing familiar meals creates moments of connection and nostalgia.</p>
+      
+      <h2>Greeting Cards and Communication</h2>
+      <p>Send culturally appropriate greeting cards to family and friends. These small gestures maintain connections and share the joy of celebrations across distances.</p>
+      
+      <h2>Community and Family</h2>
+      <p>Connect with local cultural communities or organize small gatherings. Building networks of like-minded people helps preserve traditions and creates new memories abroad.</p>
+      
+      <h2>Passing Down Traditions</h2>
+      <p>Use these celebrations as opportunities to teach children about cultural heritage. Share stories, recipes, and customs to ensure traditions continue through generations.</p>
+    `,
   },
 ];
 

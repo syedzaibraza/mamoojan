@@ -24,7 +24,7 @@ import { useState } from "react";
 import { useWooCategories } from "../hooks/useWooCategories";
 import { useWooProducts } from "../hooks/useWooProducts";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, Pagination } from "swiper/modules";
+import { Autoplay, Navigation, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
 import { Button } from "../components/ui/button";
@@ -76,13 +76,10 @@ const heroSlides = [
       "Traditional products, herbal supplements, authentic snacks, and everyday essentials — bringing the flavors and traditions of home to your doorstep.",
     ctaLabel: "Shop Now",
     ctaHref: "/shop",
-    image:
-      "/all-products.png",
+    image: "/all-products.png",
     imageAlt: "Connecting families with traditional products",
-    backgroundClass:
-      "bg-gradient-to-br from-stone-50 via-white to-gray-50",
-    backgroundImage:
-      "url('/banner.png')",
+    backgroundClass: "bg-gradient-to-br from-stone-50 via-white to-gray-50",
+    backgroundImage: "url('/banner.png')",
     panelClass: "bg-white",
     ratingText: "4.7/5 Average Rating",
     ratingSubtext: "Loved by families since 2017",
@@ -96,14 +93,11 @@ const heroSlides = [
     description:
       "From pure shilajit to daily essentials, discover carefully selected products that support energy, balance, and wellbeing for your entire family.",
     ctaLabel: "Explore Wellness",
-    ctaHref: "/category/herbal-supplements",
-    image:
-      "/salajit-image.png",
+    ctaHref: "/category/food",
+    image: "/salajit-image.png",
     imageAlt: "Natural wellness products display",
-    backgroundImage:
-      "url('/banner-1.png')",
-    backgroundClass:
-      "bg-gradient-to-br from-emerald-50 via-white to-lime-50",
+    backgroundImage: "url('/banner-1.png')",
+    backgroundClass: "bg-gradient-to-br from-emerald-50 via-white to-lime-50",
     panelClass: "bg-emerald-50/90",
     ratingText: "Top Rated Wellness",
     ratingSubtext: "Clean ingredients and trusted quality",
@@ -117,14 +111,11 @@ const heroSlides = [
     description:
       "Stock your pantry with beloved snacks, spices, and cultural favorites shipped quickly from our USA warehouse with secure checkout.",
     ctaLabel: "Browse Snacks",
-    ctaHref: "/category/snacks-food",
-    image:
-      "/mango-image.png",
+    ctaHref: "/product/844",
+    image: "/mango-image.png",
     imageAlt: "Authentic pantry and snack products",
-    backgroundImage:
-      "url('/banner-2.png')",
-    backgroundClass:
-      "bg-gradient-to-br from-amber-50 via-white to-orange-50",
+    backgroundImage: "url('/banner-2.png')",
+    backgroundClass: "bg-gradient-to-br from-amber-50 via-white to-orange-50",
     panelClass: "bg-amber-50/90",
     ratingText: "Fast Shipping Across USA",
     ratingSubtext: "Packed with care, delivered quickly",
@@ -164,13 +155,21 @@ export function HomePage() {
           {heroSlides.map((slide) => (
             <SwiperSlide key={slide.title}>
               <div
-                className={`relative ${slide.backgroundClass} bg-cover  bg-no-repeat ${slide.id === 1 ? "bg-bottom" : "bg-center"}`}
-                style={slide.backgroundImage ? { backgroundImage: slide.backgroundImage } : undefined}
+                className={`relative ${slide.backgroundClass} bg-cover bg-no-repeat min-h-[500px] md:min-h-[600px] lg:min-h-[650px] flex items-center ${
+                  slide.id === 1 ? "bg-bottom" : "bg-center"
+                }`}
+                style={
+                  slide.backgroundImage
+                    ? { backgroundImage: slide.backgroundImage }
+                    : undefined
+                }
               >
                 <div className="max-w-7xl mx-auto px-4 py-12 md:py-20 lg:py-24">
                   <div className="grid lg:grid-cols-2 gap-8 items-center">
                     <div>
-                      <span className={`${slide.id === 2 || slide.id === 1 ? "bg-white/10 text-white" : "bg-primary/10 text-primary"} inline-block px-3 py-1 rounded-full text-sm mb-4`}>
+                      <span
+                        className={`${slide.id === 2 || slide.id === 1 ? "bg-white/10 text-white" : "bg-primary/10 text-primary"} inline-block px-3 py-1 rounded-full text-sm mb-4`}
+                      >
                         {slide.badge}
                       </span>
                       <h1
@@ -183,11 +182,21 @@ export function HomePage() {
                         }}
                       >
                         {slide.title.split(slide.highlightOne)[0]}
-                        <span className={`${slide.id === 3 ? "text-white" : "text-accent"}`}>{slide.highlightOne}</span>
-                        {slide.title
-                          .split(slide.highlightOne)[1]
-                          ?.split(slide.highlightTwo)[0]}
-                        <span className={`${slide.id === 3 ? "text-white" : "text-accent"}`}>{slide.highlightTwo}</span>
+                        <span
+                          className={`${slide.id === 3 ? "text-white" : "text-accent"}`}
+                        >
+                          {slide.highlightOne}
+                        </span>
+                        {
+                          slide.title
+                            .split(slide.highlightOne)[1]
+                            ?.split(slide.highlightTwo)[0]
+                        }
+                        <span
+                          className={`${slide.id === 3 ? "text-white" : "text-accent"}`}
+                        >
+                          {slide.highlightTwo}
+                        </span>
                         {slide.title.split(slide.highlightTwo)[1]}
                       </h1>
                       <p
@@ -208,25 +217,29 @@ export function HomePage() {
                           {slide.ctaLabel} <ArrowRight className="w-4 h-4" />
                         </Link> */}
                         <Button
-                          size='xl'
-                          variant={slide.id === 2 || slide.id === 1 ? "outline" : "default"}
+                          size="xl"
+                          variant={
+                            slide.id === 2 || slide.id === 1
+                              ? "outline"
+                              : "default"
+                          }
                           className={`${slide.id === 2 || slide.id === 1 ? "bg-white text-primary hover:bg-white/90 hover:text-primary" : "bg-primary text-white hover:bg-primary/90 hover:text-white"} px-6 py-3 rounded-lg transition-colors flex items-center gap-2 cursor-pointer`}
                         >
                           {slide.ctaLabel} <ArrowRight className="w-4 h-4" />
                         </Button>
                       </div>
-                      <div className={`flex items-center gap-6 mt-8 text-sm ${slide.id === 2 || slide.id === 1 ? "text-white" : "text-primary"}`}>
+                      <div
+                        className={`flex items-center gap-6 mt-8 text-sm ${slide.id === 2 || slide.id === 1 ? "text-white" : "text-primary"}`}
+                      >
                         <span className="flex items-center gap-1">
-                          <CheckCircle className="w-4 h-4 " />{" "}
-                          Authentic Products
+                          <CheckCircle className="w-4 h-4 " /> Authentic
+                          Products
                         </span>
                         <span className="flex items-center gap-1">
-                          <CheckCircle className="w-4 h-4 " /> Fast
-                          Shipping
+                          <CheckCircle className="w-4 h-4 " /> Fast Shipping
                         </span>
                         <span className="flex items-center gap-1">
-                          <CheckCircle className="w-4 h-4 " /> Family
-                          Owned
+                          <CheckCircle className="w-4 h-4 " /> Family Owned
                         </span>
                       </div>
                     </div>
@@ -304,33 +317,56 @@ export function HomePage() {
               View All <ChevronRight className="w-4 h-4" />
             </Link> */}
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {/* Swiper for mobile */}
+          <div className="block lg:hidden">
+            <Swiper
+              spaceBetween={16}
+              slidesPerView={2}
+              breakpoints={{
+                640: {
+                  slidesPerView: 3,
+                },
+                768: {
+                  slidesPerView: 4,
+                },
+              }}
+            >
+              {categories.map((cat) => (
+                <SwiperSlide key={cat.slug}>
+                  <Link
+                    href={`/category/${cat.slug}`}
+                    className="flex flex-col gap-1 items-center group"
+                  >
+                    <img
+                      src={cat.image?.src || "/Mamoojan-Logo.png"}
+                      alt={cat.name || ""}
+                      className="size-30 rounded-full transition-all duration-300 group-hover:brightness-110"
+                    />
+                    <h3 className="text-sm font-semibold group-hover:text-pink-600">
+                      {cat.name}
+                    </h3>
+                  </Link>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          </div>
+
+          {/* Grid for desktop */}
+          <div className="hidden lg:grid grid-cols-5 gap-4 place-items-center">
             {categories.map((cat) => (
               <Link
                 key={cat.slug}
                 href={`/category/${cat.slug}`}
-                className="group relative rounded-xl overflow-hidden aspect-[3/4]"
+                className="flex flex-col gap-1 items-center group transition-transform duration-300 hover:scale-105"
               >
                 <img
                   src={cat.image?.src || "/Mamoojan-Logo.png"}
                   alt={cat.name || ""}
-                  className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500"
-                  loading="lazy"
+                  className="size-30 rounded-full transition-all duration-300 group-hover:brightness-110"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <h3
-                    className="text-white"
-                    style={{
-                      fontFamily: "Poppins, sans-serif",
-                      fontWeight: 600,
-                      fontSize: "16px",
-                    }}
-                  >
-                    {cat.name}
-                  </h3>
-                  <span className="text-white/80 text-sm">Shop Now &rarr;</span>
-                </div>
+                <h3 className="text-sm font-semibold group-hover:text-pink-600">
+                  {cat.name}
+                </h3>
               </Link>
             ))}
           </div>
@@ -504,7 +540,7 @@ export function HomePage() {
             </Link>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
-            {blogPosts.map((post) => (
+            {blogPosts.slice(0, 3).map((post) => (
               <Link key={post.id} href="/blog" className="group">
                 <div className="rounded-xl overflow-hidden aspect-video mb-4">
                   <img
@@ -682,7 +718,7 @@ export function HomePage() {
       </section> */}
 
       {/* Section 9: Newsletter Signup */}
-      <section className="py-12 md:py-16 bg-white">
+      {/* <section className="py-12 md:py-16 bg-white">
         <div className="max-w-2xl mx-auto px-4 text-center">
           <h2
             style={{
@@ -719,7 +755,7 @@ export function HomePage() {
             No spam, ever. Unsubscribe anytime.
           </p>
         </div>
-      </section>
+      </section> */}
 
       {/* Shipping Bar */}
       <section className="py-6 bg-secondary border-t border-border">

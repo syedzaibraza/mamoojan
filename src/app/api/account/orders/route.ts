@@ -54,14 +54,20 @@ export async function GET() {
   try {
     const token = await getAuthToken();
     if (!token) {
-      return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { ok: false, message: "Unauthorized" },
+        { status: 401 },
+      );
     }
 
     const { wcUrl, wcKey, wcSecret } = getWooEnv();
     const wpUser = await getWordPressMe(wcUrl, token);
     const userEmail = wpUser?.email?.trim().toLowerCase();
     if (!wpUser?.id) {
-      return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { ok: false, message: "Unauthorized" },
+        { status: 401 },
+      );
     }
 
     const byCustomerUrl = new URL(`${wcUrl}/wp-json/wc/v3/orders`);
@@ -80,12 +86,15 @@ export async function GET() {
 
     const [ordersByCustomer, ordersByEmailSearch] = await Promise.all([
       requestJson<WpOrder[]>(byCustomerUrl),
-      userEmail ? requestJson<WpOrder[]>(byEmailUrl) : Promise.resolve([] as WpOrder[]),
+      userEmail
+        ? requestJson<WpOrder[]>(byEmailUrl)
+        : Promise.resolve([] as WpOrder[]),
     ]);
 
     const ordersByEmail = userEmail
       ? ordersByEmailSearch.filter(
-          (order) => (order.billing?.email || "").trim().toLowerCase() === userEmail,
+          (order) =>
+            (order.billing?.email || "").trim().toLowerCase() === userEmail,
         )
       : [];
 
@@ -106,14 +115,19 @@ export async function GET() {
         dateCreated: order.date_created,
         status: order.status,
         total: Number(order.total || 0),
-        items: order.line_items?.reduce((sum, item) => sum + (item.quantity || 0), 0) ?? 0,
+        items:
+          order.line_items?.reduce(
+            (sum, item) => sum + (item.quantity || 0),
+            0,
+          ) ?? 0,
       })),
     });
   } catch (error) {
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof Error ? error.message : "Failed to load orders.",
+        message:
+          error instanceof Error ? error.message : "Failed to load orders.",
       },
       { status: 500 },
     );

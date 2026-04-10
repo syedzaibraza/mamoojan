@@ -94,14 +94,14 @@ export function Footer() {
                     </li>
                   ))
                 : null}
-              <li>
+              {/* <li>
                 <Link
                   href="/category/deals"
                   className="text-accent hover:text-accent/80 transition-colors"
                 >
                   Deals & Offers
                 </Link>
-              </li>
+              </li> */}
             </ul>
           </div>
 
@@ -148,6 +148,14 @@ export function Footer() {
                   className="hover:text-white transition-colors"
                 >
                   Contact Us
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/track-order"
+                  className="hover:text-white transition-colors"
+                >
+                  Track Order
                 </Link>
               </li>
               <li>

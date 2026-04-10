@@ -7,6 +7,18 @@ export const metadata: Metadata = {
   title: "MamooJan – Connecting Families Around The World",
   description:
     "Traditional products, herbal supplements, authentic snacks, and everyday essentials.",
+  icons: [
+    {
+      rel: "icon",
+      url: "/fav-black.png",
+      media: "(prefers-color-scheme: light)",
+    },
+    {
+      rel: "icon",
+      url: "/fav-white.png",
+      media: "(prefers-color-scheme: dark)",
+    },
+  ],
 };
 
 export default function RootLayout({
